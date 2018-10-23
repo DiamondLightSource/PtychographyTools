@@ -1,0 +1,145 @@
+#!/usr/bin/env python
+
+import argparse
+import numpy as np
+from ptypy import utils as u
+from ptypy.core import Ptycho
+from ptychotools.propagation.focussing import propagate_probe
+from ptychotools.utils.ptypy_parameters import paramtree_from_json, parse_param_data_paths_with_paramtree
+from ptychotools.verbose import logger
+import h5py as h5
+
+
+u.verbose.set_level(3)
+parser = argparse.ArgumentParser(description='Plots the ptychography reconstruction through a focus')
+
+parser.add_argument("json_file",
+                    help="The path to the json configuration file.",
+                    type=str)
+
+parser.add_argument('--identifier', '-I',
+                    dest="identifier",
+                    help="This is the same as p.run.",
+                    default=None,
+                    type=str)
+
+parser.add_argument('--output-file', '-O',
+                    dest="output_file",
+                    help="The path we want to save the output hdf to (will get created).",
+                    default=None,
+                    type=str)
+
+parser.add_argument('--zrange',
+                    dest="zrange",
+                    help="The z range. zstart, zstop",
+                    default=(-1e-3, 1e-3),
+                    type=tuple)
+
+
+args = parser.parse_args()
+
+if args.output_file is None:
+    raise IOError('You need to specify an output file path.')
+
+NPTS = 1024
+
+def get_file_name(args):
+    from datetime import datetime
+    now = datetime.now()
+    if args.identifier is not None:
+        output_path = "{}scan_{}_{}".format(args.output_folder, args.identifier, now.strftime("%Y%m%d%H%M%S"))
+    else:
+        output_path = "{}scan_{}".format(args.output_folder, now.strftime("%Y%m%d%H%M%S"))
+    logger.debug("Output is going in: {}".format(output_path))
+    return output_path
+
+parameters = paramtree_from_json(args.json_file)
+
+
+parameters.run = args.identifier
+if args.plotting:
+    logger.debug("Turning the plotting on.")
+    parameters.io.autoplot = u.Param(active=True)
+else:
+    logger.debug("Turning the plotting off.")
+    parameters.io.autoplot = u.Param(active=False)
+# make sure we aren't randomly writing somewhere if this isn't set.
+if args.output_folder is not None:
+    parameters.io.home = get_file_name(args)
+    parameters.io.rfile = "%s.ptyr" % get_file_name(args)
+    parameters.io.autosave = u.Param(active=True, interval=100)
+    logger.debug("Autosave is on, with io going in {}, and the final reconstruction into {}".format(parameters.io.home,
+                                                                                              parameters.io.rfile))
+else:
+    parameters.io.rfile = None
+    parameters.io.autosave = u.Param(active=False)
+    logger.debug("Autosave is off. No output will be saved.")
+
+
+# have to get the identifier into scan.data somehow.
+parse_param_data_paths_with_paramtree(parameters)
+
+
+logger.debug("Going into the reconstruction...")
+P = Ptycho(parameters, level=args.ptypy_level)
+logger.debug("Finished the reconstruction...")
+probe_storages = P.probe.storages
+
+first_scan_name = probe_storages.keys()[0]
+first_storage = probe_storages[first_scan_name]
+probe = first_storage.data[0]
+
+obj = P.obj.storages[first_storage].data[0]
+psize = first_storage._psize
+energy = parameters.scans[first_scan_name].data.energy
+distance = parameters.scans[first_scan_name].data.distance
+
+logger.debug('Propagating the beam...')
+propagated_projections, xaxis, yaxis, zaxis = propagate_probe(probe, psize, energy, distance, args.zrange, NPTS=1024)
+logger.debug('Saving out the result...')
+
+with h5.File(args.output_file, 'w') as fout:
+    fout.create_group('entry')
+
+    # the focus propagation
+    propagated = fout['entry'].create_group('propagated')
+    abs_probe = propagated.create_group('abs_probe')
+    phase_probe = propagated.create_group('phase_probe')
+    complex_probe = propagated.create_group('complex_probe')
+    abs_probe.create_dataset('data', data=np.abs(propagated_projections))
+    abs_probe.attrs['axes'] = ["z", "y", "x"]
+    phase_probe.create_dataset('data', data=np.angle(propagated_projections))
+    phase_probe.attrs['axes'] = ["z", "y", "x"]
+    complex_probe.create_dataset('data', data=propagated_projections)
+    complex_probe.attrs['axes'] = ["z", "y", "x"]
+    # need to add reconstructed probe and object into this.
+    fout['entry/propagated/x/data'] = xaxis
+    fout['entry/propagated/y/data'] = yaxis
+    fout['entry/propagated/z/data'] = zaxis
+
+    reconstructed = fout['entry'].create_group('reconstructed')
+
+    fout['entry/reconstructed/x/data'] = fout['entry/propagated/x/data']
+    fout['entry/reconstructed/y/data'] = fout['entry/propagated/y/data']
+
+    reconstructed_abs_probe = reconstructed.create_group('abs_probe')
+    reconstructed_phase_probe = reconstructed.create_group('phase_probe')
+    reconstructed_abs_obj = reconstructed.create_group('abs_obj')
+    reconstructed_phase_obj = reconstructed.create_group('angle_obj')
+
+    reconstructed_abs_probe.create_dataset('data', data=np.abs(probe))
+    reconstructed_abs_probe.attrs['axes'] = ["y", "x"]
+
+    reconstructed_phase_probe.create_dataset('data', data=np.angle(probe))
+    reconstructed_phase_probe.attrs['axes'] = ["y", "x"]
+
+    reconstructed_abs_obj.create_dataset('data', data=np.abs(obj))
+    reconstructed_abs_obj.attrs['axes'] = ["y", "x"]
+
+    reconstructed_phase_obj.create_dataset('data', data=np.angle(obj))
+    reconstructed_phase_obj.attrs['axes'] = ["y", "x"]
+
+
+logger.debug("Finished. Output  in: %s " % args.output_file)
+
+
