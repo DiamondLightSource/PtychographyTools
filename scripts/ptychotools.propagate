@@ -131,7 +131,7 @@ parser.add_argument("--input-file", "-i",
                     type=str)
 
 parser.add_argument('--zrange', "-z",
-                    help='The distance to propagate over.',
+                    help='The distance to propagate over. Provided in quotes "$zmin $zmax" in metres.',
                     action='store', type=two_floats,
                     default=[-1.e-3, 1.e-3])
 
