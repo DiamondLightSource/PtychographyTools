@@ -29,10 +29,10 @@ def propagate_probe(probe, psize, energy, distance, zrange, NPTS=1024):
     xaxis = ((np.arange(xsize) - xsize // 2) * psize[0])
     yaxis = ((np.arange(ysize) - ysize // 2) * psize[0])
     zaxis = np.linspace(zrange[0], zrange[1], NPTS)
-    outshape = (len(zrange),) + probe.shape
+    outshape = (len(zaxis),) + probe.shape
 
-    propagated_projections = np.empty(outshape)
-
+    propagated_projections = np.empty(outshape, dtype=np.complex)
+    print propagated_projections.shape
     P = Base()
     g = u.Param()
     g.energy = None
@@ -47,3 +47,4 @@ def propagate_probe(probe, psize, energy, distance, zrange, NPTS=1024):
         G = geometry.Geo(owner=P, pars=g)
         propagated_projections[idx] = G.propagator.bw(probe)
     return propagated_projections, zaxis, yaxis, xaxis
+
