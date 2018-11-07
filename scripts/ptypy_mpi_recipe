@@ -1,0 +1,146 @@
+#!/bin/bash
+
+usage() {
+      echo "Usage:"
+      echo "-h: prints this help message"
+      echo ":-s: Run single threaded (no MPI)"
+      echo ":-l: path to the existing log file."
+      echo ":-j: path to the json file."
+      echo ":-i: identifier/scan_number."
+      echo ":-o: output folder for the reconstruction (will be created)."
+      echo ":-v: ptypy version to use"
+      echo ":-n: total number of CPU processors"  
+      echo ":-p: Propagate the result"
+}
+
+PROPAGATE=false
+
+while getopts "hs:l:j:i:o:v:n:p:" opt; do
+  case $opt in
+    h )
+      usage
+      exit 1;
+      ;;
+    s )
+      SINGLE_THREADED=$OPTARG;
+      ;;
+    l )
+      LOG_FILE=$OPTARG;
+      ;;
+    j )
+      JSON_FILE=$OPTARG;
+      ;;
+    i )
+      IDENTIFIER=$OPTARG;
+      ;;
+    o )
+      OUTPUT_FOLDER=$OPTARG;
+      ;;
+    v )
+      PTYPY_VERSION=$OPTARG;
+      ;;
+    n )
+      TOTAL_NUM_PROCESSORS=$OPTARG;
+      ;;
+    p )
+      PROPAGATE=true;
+      ZRANGE=`echo $OPTARG | tr ',' ' '`;
+      ZMIN=${ZRANGE%\ *};
+      ZMAX=${ZRANGE#* };
+      ;;
+    *)
+      usage
+      exit 1;
+      ;;
+  esac
+done
+
+
+#module load ptypy/$PTYPY_VERSION >> $LOG_FILE
+module load ptycho-tools
+
+source utils
+
+
+if [ -z ${PTYPY_VERSION+x} ];
+then
+    log "You need to pass the ptypy version" $LOG_FILE
+    exit 1
+else
+    log "The ptypy version to use is ptypy/$PTYPY_VERSION" $LOG_FILE
+fi
+
+if [ -z ${JSON_FILE+x} ];
+then
+    log "You need to pass the path to the json file." $LOG_FILE
+    exit 1
+else
+    log "The json file is set to: $JSON_FILE" $LOG_FILE
+fi
+
+if [ -z ${IDENTIFIER+x} ];
+then
+    log "You need to pass a valid identifier." $LOG_FILE
+    exit 1
+else
+    log "The identifier is set to: $IDENTIFIER" $LOG_FILE
+fi
+
+if [ -z ${TOTAL_NUM_PROCESSORS+x} ];
+then
+    log "You need to pass the number of processors" $LOG_FILE
+    exit 1
+else
+    log "The number of processors are $TOTAL_NUM_PROCESSORS" $LOG_FILE
+fi
+
+if [ -z ${OUTPUT_FOLDER+x} ];
+then
+    log "You need to pass the number of processors" $LOG_FILE
+    exit 1
+else
+    log "The number of processors are $OUTPUT_FOLDER" $LOG_FILE
+fi
+
+
+
+
+if $SINGLE_THREADED;
+then
+    log "Running single threaded ptypy, you are probably using the GPU engine at the moment" $LOG_FILE
+    ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER -P 0 >> $LOG_FILE
+    # how do we get $PTYR_FILE
+    PTYR_FILE="$OUTPUT_FOLDER/scan_$IDENTIFIER.ptyr" # this is a bit hardcoded...Is it a standard?
+    if $PROPAGATE;
+    then
+        ptychotools.propagate -i $PTYR_FILE -o $OUTPUT_FOLDER -z "$ZMIN $ZMAX" >> $LOG_FILE
+    fi
+else
+    UNIQHOSTS=${TMPDIR}/machines-u
+    awk '{print $1 }' ${PE_HOSTFILE} | uniq > ${UNIQHOSTS}
+    UNIQSLOTS=$(wc -l <${UNIQHOSTS})
+    NUM_CORES_PER_NODE=$(expr $TOTAL_NUM_PROCESSORS / $UNIQSLOTS) 
+    log "Number of unique slots: ${UNIQSLOTS}" $LOG_FILE
+    log "Running on these hosts:" >> $LOG_FILE
+    log ${UNIQHOSTS} $LOG_FILE
+    
+    typeset TMP_FILE=$( mktemp )
+    touch "${TMP_FILE}"
+    cp -p ${UNIQHOSTS} "${TMP_FILE}"
+    sed -e "$(date +'%Y:%m:%d:%H:%M:%S')  s/$/ slots=$NUM_CORES_PER_NODE/" -i ${TMP_FILE}
+    
+    processes=`bc <<< "$((uniqslots*$NUM_CORES_PER_NODE))"`
+    log "Processes running are : ${processes}" $LOG_FILE
+    
+    mpirun -np ${processes} --mca btl vader,self,openib -x LD_LIBRARY_PATH --hostfile ${TMP_FILE} ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER -P 0 >> $LOG_FILE
+    if $PROPAGATE;
+    then
+        # how do we get $PTYR_FILE
+        PTYR_FILE="$OUTPUT_FOLDER/scan_$IDENTIFIER.ptyr" # this is a bit hardcoded...Is it a standard?
+        ptychotools.propagate -i $PTYR_FILE -o $OUTPUT_FOLDER -z "$ZMIN $ZMAX" >> $LOG_FILE
+    fi
+
+fi
+log "Processing for this file is all in: $OUTPUT_FOLDER" $LOG_FILE
+log "################     PROCESSING COMPLETE      #############" $LOG_FILE
+

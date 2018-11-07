@@ -1,0 +1,104 @@
+#!/bin/bash
+
+source utils
+
+usage() {
+      echo "Usage:"
+      echo ":-c: path to the cluster config file."
+      echo ":-j: path to the json file."
+      echo ":-i: identifier/scan_number."
+      echo ":-o: output	folder for the reconstruction (will be created)."
+      echo ":-p: propagate the output between the given range."
+}
+
+PROPAGATE=false
+
+while getopts "hj:c:i:o:p:" opt; do
+  case $opt in
+    c )
+      CLUSTER_CONFIG_FILE=$OPTARG;
+      ;;
+    j )
+      JSON_FILE=$OPTARG;
+      ;;
+    i ) 
+      IDENTIFIER=$OPTARG;
+      ;;
+    o )
+      OUTPUT_FOLDER=$OPTARG;
+      ;;
+    p )
+      PROPAGATE=true;
+      ZRANGE=$OPTARG
+      ;;
+    h )
+      usage
+      exit 1;
+      ;;
+    * )
+      usage
+      exit 1;
+      ;;
+  esac
+done
+
+if [ -z ${CLUSTER_CONFIG_FILE+x} ];
+then
+    echo "$(date +"%Y:%m:%d:%H:%M:%S")  You need to pass the path to the cluster config file"
+    exit 1
+else
+    source $CLUSTER_CONFIG_FILE; # this populates a bunch of parameters, so that's why they suddenly appear! Should document these.
+    mkdir -p $LOG_DIRECTORY
+    #echo "The folder for the logs is set to: $LOG_DIRECTORY"
+    LOG_FILE="$LOG_DIRECTORY/$(date +'%Y%m%d_%H%M%S').log"
+    touch $LOG_FILE
+    echo "The log file is $LOG_FILE"
+    log "The cluster config file is set to: $CLUSTER_CONFIG_FILE" $LOG_FILE
+fi
+
+if [ -z ${JSON_FILE+x} ];
+then 
+    log "You need to pass the path to the json file." $LOG_FILE
+    exit 1
+else
+    log "The json file is set to: $JSON_FILE" $LOG_FILE
+fi
+
+if [ -z ${IDENTIFIER+x} ];
+then
+    log "You need to pass a valid identifier." $LOG_FILE
+    exit 1
+else
+    log "The identifier is set to: $IDENTIFIER" $LOG_FILE
+fi
+
+if [ -z ${OUTPUT_FOLDER+x} ];
+then
+    log "You need to pass an output folder." $LOG_FILE
+    exit 1
+else
+    log "The output folder is set to $OUTPUT_FOLDER" $LOG_FILE
+    mkdir -p $OUTPUT_FOLDER
+    log "Folder created." $LOG_FILE
+fi
+
+SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
+module load global/cluster >> $LOG_FILE
+
+if $PROPAGATE;
+then
+log "I'll propagate the result" $LOG_FILE
+qsub -jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive \
+      -l infiniband -l gpu=$NUM_GPUS_PER_NODE -l gpu_arch=$GPU_ARCH -q $CLUSTER_QUEUE -P $PROJECT \
+      -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYPY_VERSION -p $ZRANGE -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -l $LOG_FILE -p $ZRANGE >> $LOG_FILE
+
+
+else
+log "Not propagating the results" $LOG_FILE
+qsub -jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive \
+      -l infiniband -l gpu=$NUM_GPUS_PER_NODE -l gpu_arch=$GPU_ARCH -q $CLUSTER_QUEUE -P $PROJECT \
+      -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -l $LOG_FILE >> $LOG_FILE
+fi
+
+
