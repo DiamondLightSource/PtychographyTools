@@ -102,23 +102,23 @@ def write_propagated_output(output_filename, propagated_projections, xaxis, yaxi
         reconstructed_phase_probe.attrs['signal'] = 'data'
 
         reconstructed_abs_obj = reconstructed.create_group('abs_obj')
-        reconstructed_abs_probe.attrs["NX_class"] = 'NXdata'
+        reconstructed_abs_obj.attrs["NX_class"] = 'NXdata'
         reconstructed_abs_obj.create_dataset('data', data=np.abs(obj))
-        reconstructed_abs_obj['x'] = fout['entry/reconstructed/obj_x/data'][...]
-        reconstructed_abs_obj['y'] = fout['entry/reconstructed/obj_y/data'][...]
-        reconstructed_abs_obj.attrs['axes'] = ["x", "y"]
-        reconstructed_abs_obj.attrs['x_indices'] = 0
-        reconstructed_abs_obj.attrs['y_indices'] = 1
+        reconstructed_abs_obj['obj_x'] = fout['entry/reconstructed/obj_x/data'][...]
+        reconstructed_abs_obj['obj_y'] = fout['entry/reconstructed/obj_y/data'][...]
+        reconstructed_abs_obj.attrs['axes'] = ["obj_x", "obj_y"]
+        reconstructed_abs_obj.attrs['obj_x_indices'] = 0
+        reconstructed_abs_obj.attrs['obj_y_indices'] = 1
         reconstructed_abs_obj.attrs['signal'] = 'data'
 
         reconstructed_phase_obj = reconstructed.create_group('phase_obj')
-        reconstructed_phase_probe.attrs["NX_class"] = 'NXdata'
+        reconstructed_phase_obj.attrs["NX_class"] = 'NXdata'
         reconstructed_phase_obj.create_dataset('data', data=np.angle(obj))
-        reconstructed_phase_obj['x'] = fout['entry/reconstructed/obj_x/data'][...]
-        reconstructed_phase_obj['y'] = fout['entry/reconstructed/obj_y/data'][...]
-        reconstructed_phase_obj.attrs['axes'] = ["x", "y"]
-        reconstructed_phase_obj.attrs['x_indices'] = 0
-        reconstructed_phase_obj.attrs['y_indices'] = 1
+        reconstructed_phase_obj['obj_x'] = fout['entry/reconstructed/obj_x/data'][...]
+        reconstructed_phase_obj['obj_y'] = fout['entry/reconstructed/obj_y/data'][...]
+        reconstructed_phase_obj.attrs['axes'] = ["obj_x", "obj_y"]
+        reconstructed_phase_obj.attrs['obj_x_indices'] = 0
+        reconstructed_phase_obj.attrs['obj_y_indices'] = 1
         reconstructed_phase_obj.attrs['signal'] = 'data'
 
 
