@@ -4,6 +4,9 @@ source utils
 
 usage() {
       echo "Usage:"
+      echo "This is the main ptypy launcher for Diamond Light source."
+      echo "It can be called in a number of ways depending on what is needed."
+
       echo ":-c: path to the cluster config file."
       echo ":-j: path to the json file."
       echo ":-i: identifier/scan_number."
