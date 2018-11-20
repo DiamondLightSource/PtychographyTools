@@ -21,7 +21,7 @@ def two_floats(value):
     return values
 
 
-def write_propagated_output(output_filename, propagated_projections, xaxis, yaxis, zaxis, obj, probe, pobj):
+def write_propagated_output(output_filename, propagated_projections, probe_x, probe_y, probe, zaxis, obj_x, obj_y, obj):
     with h5.File(output_filename, 'w') as fout:
         fout.create_group('entry')
         fout.attrs['NX_class'] = 'NXentry'
@@ -29,11 +29,10 @@ def write_propagated_output(output_filename, propagated_projections, xaxis, yaxi
         propagated = fout['entry'].create_group('propagated')
 
         # need to add reconstructed probe and object into this.
-        fout['entry/propagated/x/data'] = xaxis
-        fout['entry/propagated/y/data'] = yaxis
+        fout['entry/propagated/x/data'] = probe_x
+        fout['entry/propagated/y/data'] = probe_y
         fout['entry/propagated/z/data'] = zaxis
         chunks = (50, 50, 50)
-
 
         abs_probe = propagated.create_group('abs_probe')
         abs_probe.attrs["NX_class"] = 'NXdata'
@@ -75,8 +74,8 @@ def write_propagated_output(output_filename, propagated_projections, xaxis, yaxi
         reconstructed = fout['entry'].create_group('reconstructed')
         reconstructed.create_group('obj_x')
         reconstructed.create_group('obj_y')
-        reconstructed['obj_x'].create_dataset('data', data=np.arange(obj.shape[0])*pobj)
-        reconstructed['obj_y'].create_dataset('data', data=np.arange(obj.shape[1])*pobj)
+        reconstructed['obj_x'].create_dataset('data', data=obj_x)
+        reconstructed['obj_y'].create_dataset('data', data=obj_y)
 
         fout['entry/reconstructed/x/data'] = fout['entry/propagated/x/data'][...]
         fout['entry/reconstructed/y/data'] = fout['entry/propagated/y/data'][...]
@@ -157,10 +156,15 @@ obj_storages = P.obj.storages
 first_scan_name_probe = probe_storages.keys()[0]
 first_storage_probe = probe_storages[first_scan_name_probe]
 probe = first_storage_probe.data[0]
+probe_x = first_storage_probe.grids()[0][0, :, 0]
+probe_y = first_storage_probe.grids()[1][0, 0, :]
+
 
 first_scan_name_obj = obj_storages.keys()[0]
 first_storage_obj = obj_storages[first_scan_name_obj]
 obj = first_storage_obj.data[0]
+obj_x = first_storage_obj.grids()[0][0, :, 0]
+obj_y = first_storage_obj.grids()[1][0, 0, :]
 
 psize = first_storage_probe._psize
 energy = parameters.scans[first_scan_name_probe.strip('S').split('G')[0]].data.energy
@@ -174,7 +178,8 @@ output_file_path = '{}_propagated_{}_{}.nxs'.format(os.path.join(args.output_fol
                                                    str(args.zrange[0]), str(args.zrange[1]))
 
 logger.debug('Saving out the result...')
-write_propagated_output(output_file_path, propagated_projections, xaxis, yaxis, zaxis, obj, probe, pobj=psize[0])
+
+write_propagated_output(output_file_path, propagated_projections, probe_x, probe_y, probe, zaxis, obj_x, obj_y, obj)
 logger.debug("Finished. Output  in: %s " % output_file_path)
 
 
