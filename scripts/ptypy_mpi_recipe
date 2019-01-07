@@ -118,18 +118,19 @@ then
 else
     UNIQHOSTS=${TMPDIR}/machines-u
     awk '{print $1 }' ${PE_HOSTFILE} | uniq > ${UNIQHOSTS}
+    log "uniq hosts: ${UNIQHOSTS}" $LOG_FILE
     UNIQSLOTS=$(wc -l <${UNIQHOSTS})
     NUM_CORES_PER_NODE=$(expr $TOTAL_NUM_PROCESSORS / $UNIQSLOTS) 
     log "Number of unique slots: ${UNIQSLOTS}" $LOG_FILE
-    log "Running on these hosts:" >> $LOG_FILE
+    log "Running on these hosts:" $LOG_FILE
     log ${UNIQHOSTS} $LOG_FILE
     
     typeset TMP_FILE=$( mktemp )
     touch "${TMP_FILE}"
     cp -p ${UNIQHOSTS} "${TMP_FILE}"
-    sed -e "$(date +'%Y:%m:%d:%H:%M:%S')  s/$/ slots=$NUM_CORES_PER_NODE/" -i ${TMP_FILE}
+    sed -e "s/$/ slots=$NUM_CORES_PER_NODE/" -i ${TMP_FILE}
     
-    processes=`bc <<< "$((uniqslots*$NUM_CORES_PER_NODE))"`
+    processes=`bc <<< "$(($UNIQSLOTS*$NUM_CORES_PER_NODE))"`
     log "Processes running are : ${processes}" $LOG_FILE
     
     mpirun -np ${processes} --mca btl vader,self,openib -x LD_LIBRARY_PATH --hostfile ${TMP_FILE} ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER -P 0 >> $LOG_FILE
