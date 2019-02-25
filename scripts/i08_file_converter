@@ -1,0 +1,133 @@
+#! /dls_sw/apps/ptypy/temporary_environment/miniconda/envs/full_dependencies/bin/python
+
+import h5py as h5
+import datetime
+import logging
+import argparse
+
+logfile = '/dls/tmp/ptypy_logging/i08/i08_file_converter_%s.log' % datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+
+logging.basicConfig(filename=logfile, level=logging.DEBUG)
+
+
+
+parser = argparse.ArgumentParser(description='Converts the I08 data format to a hdf5 file, losing -i columns')
+
+
+parser.add_argument("--data-file", "-d",
+                    dest="data_file",
+                    help="The path to the hdf5 file containing the data",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--data-key", "-k",
+                    dest="data_key",
+                    help="The path inside the hdf5 file to the data",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--position_file", "-p",
+                    dest="position_file",
+                    help="The path to the hdf5 file containing the positions",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--fast-key", "-f",
+                    dest="fast_key",
+                    help="The path inside the hdf5 file to the fast axis dataset",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--slow-key", "-s",
+                    dest="slow_key",
+                    help="The path inside the hdf5 file to the slow axis dataset",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--skip-index", "-i",
+                    dest="skip_index",
+                    help="The number of fast axis points to skip",
+                    default=None,
+                    type=int)
+
+parser.add_argument("--select-index", "-u",
+                    dest="select_index",
+                    help="Selects this index from the stack",
+                    default=None,
+                    type=int)
+
+
+parser.add_argument("--out-file", "-o",
+                    dest="out_file",
+                    help="The path to the output hdf5 file",
+                    default=None,
+                    type=str)
+
+args = parser.parse_args()
+
+if args.data_file is None:
+    logging.debug("Data file not set")
+    raise IOError('You need to set the data file!')
+
+if args.data_key is None:
+    logging.debug("Data key not set")
+    raise IOError('You need to set the data key!')
+
+if args.position_file is None:
+    logging.debug("Position file not set")
+    raise IOError('You need to set the position file!')
+
+if args.fast_key is None:
+    logging.debug("Fast key not set")
+    raise IOError('You need to set the fast key!')
+
+if args.slow_key is None:
+    logging.debug("Slow key not set")
+    raise IOError('You need to set the slow key!')
+
+if args.slow_key is None:
+    logging.debug("Output filepath not set")
+    raise IOError('You need to set the output file!')
+
+if args.skip_index is not None and args.select_index is not None:
+    logging.debug("Can't do select and skip at the same time")
+    raise RuntimeError("You can't set both select and skip indexes")
+
+
+if args.skip_index is not None:
+    logging.debug("Skip index is:%s" % args.skip_index)
+    data = h5.File(args.data_file, 'r')[args.data_key][:, args.skip_index:]
+    fast_axis = h5.File(args.position_file, 'r')[args.fast_key][:, args.skip_index:]
+    slow_axis = h5.File(args.position_file, 'r')[args.slow_key][:, args.skip_index:]
+
+if args.select_index is not None:
+    logging.debug("Select index is: %s" % args.select_index)
+    data = h5.File(args.data_file, 'r')[args.data_key][args.select_index]
+    fast_axis = h5.File(args.position_file, 'r')[args.fast_key][args.select_index]
+    slow_axis = h5.File(args.position_file, 'r')[args.slow_key][args.select_index]
+
+if args.select_index is None and args.skip_index is None:
+    logging.debug("Won't do anything except copy")
+    data = h5.File(args.data_file, 'r')[args.data_key][...]
+    fast_axis = h5.File(args.position_file, 'r')[args.fast_key][...]
+    slow_axis = h5.File(args.position_file, 'r')[args.slow_key][...]
+
+#could do all this smarter with slicing, but hack for now.
+
+logging.debug("Writing to file: %s" % args.out_file)
+
+f = h5.File(args.out_file, 'w')
+f.create_group('entry')
+f['entry/data'] = data
+f['entry/fast_axis'] = fast_axis
+f['entry/slow_axis'] = slow_axis
+f.close()
+logging.debug("Done")
+
+
+
+
+
+
+
+
