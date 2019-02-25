@@ -8,7 +8,7 @@ import os
 from ptypy.core import Ptycho
 from ptychotools.propagation.focussing import propagate_probe
 from ptychotools.verbose import logger
-
+from ptypy.utils import ortho
 
 def two_floats(value):
     '''
@@ -155,7 +155,10 @@ obj_storages = P.obj.storages
 
 first_scan_name_probe = probe_storages.keys()[0]
 first_storage_probe = probe_storages[first_scan_name_probe]
-probe = first_storage_probe.data[0]
+logger.debug('Selecting the first eigenmode of the probe...')
+weights, probes = ortho(first_storage_probe.data)
+probe = probes[0]
+
 probe_x = first_storage_probe.grids()[0][0, :, 0]
 probe_y = first_storage_probe.grids()[1][0, 0, :]
 
