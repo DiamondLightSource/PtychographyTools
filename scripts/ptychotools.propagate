@@ -120,6 +120,16 @@ def write_propagated_output(output_filename, propagated_projections, probe_x, pr
         reconstructed_phase_obj.attrs['obj_y_indices'] = 1
         reconstructed_phase_obj.attrs['signal'] = 'data'
 
+        reconstructed_complex_obj = reconstructed.create_group('complex_obj')
+        reconstructed_complex_obj.attrs["NX_class"] = 'NXdata'
+        reconstructed_complex_obj.create_dataset('data', data=obj)
+        reconstructed_complex_obj['complex_obj_x'] = fout['entry/reconstructed/obj_x/data'][...]
+        reconstructed_complex_obj['complex_obj_y'] = fout['entry/reconstructed/obj_y/data'][...]
+        reconstructed_complex_obj.attrs['axes'] = ["complex_obj_x", "complex_obj_y"]
+        reconstructed_complex_obj.attrs['complex_obj_x_indices'] = 0
+        reconstructed_complex_obj.attrs['complex_obj_y_indices'] = 1
+        reconstructed_complex_obj.attrs['signal'] = 'data'
+
 
 parser = argparse.ArgumentParser(description='Propagates a ptychography reconstruction using nearfield ASM over a given range.')
 
