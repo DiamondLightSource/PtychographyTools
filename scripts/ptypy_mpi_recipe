@@ -4,27 +4,32 @@ usage() {
       echo "Usage:"
       echo "-h: prints this help message"
       echo ":-s: Run single threaded (no MPI)"
-      echo ":-l: path to the existing log file."
+      echo ":-z: path to the existing log file."
       echo ":-j: path to the json file."
       echo ":-i: identifier/scan_number."
       echo ":-o: output folder for the reconstruction (will be created)."
       echo ":-v: ptypy version to use"
       echo ":-n: total number of CPU processors"  
       echo ":-p: Propagate the result"
+      echo ":-q: Link the reconstructions"
 }
 
 PROPAGATE=false
+EXTRA_ARGS="-P 0"
 
-while getopts "hs:l:j:i:o:v:n:p:" opt; do
+while getopts "hqs:z:j:i:o:v:n:p:" opt; do
   case $opt in
     h )
       usage
       exit 1;
       ;;
+    q )
+      EXTRA_ARGS="$EXTRA_ARGS -S"
+      ;;
     s )
       SINGLE_THREADED=$OPTARG;
       ;;
-    l )
+    z )
       LOG_FILE=$OPTARG;
       ;;
     j )
@@ -55,9 +60,19 @@ while getopts "hs:l:j:i:o:v:n:p:" opt; do
   esac
 done
 
-
 #module load ptypy/$PTYPY_VERSION >> $LOG_FILE
-module load ptycho-tools
+echo "Extra args are$EXTRA_ARGS"
+echo "The log file is:$LOG_FILE"
+echo "The json file is:$JSON_FILE"
+echo "The identifier is:$IDENTIFIER"
+echo "The output folder is:$OUTPUT_FOLDER"
+echo "The ptypy version is:$PTYPY_VERSION"
+echo "The single threaded is:$SINGLE_THREADED"
+echo "PROPAGATE IS:$PROPAGATE"
+
+
+
+module load $PTYPY_VERSION >> "$LOG_FILE"
 
 source utils
 
@@ -67,7 +82,7 @@ then
     log "You need to pass the ptypy version" $LOG_FILE
     exit 1
 else
-    log "The ptypy version to use is ptypy/$PTYPY_VERSION" $LOG_FILE
+    log "The ptypy version to use is $PTYPY_VERSION" $LOG_FILE
 fi
 
 if [ -z ${JSON_FILE+x} ];
@@ -105,10 +120,13 @@ fi
 
 
 
+
+
+
 if $SINGLE_THREADED;
 then
     log "Running single threaded ptypy, you are probably using the GPU engine at the moment" $LOG_FILE
-    ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER -P 0 >> $LOG_FILE
+    ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS >> $LOG_FILE
     # how do we get $PTYR_FILE
     PTYR_FILE="$OUTPUT_FOLDER/scan_$IDENTIFIER/scan_$IDENTIFIER.ptyr" # this is a bit hardcoded...Is it a standard?
     if $PROPAGATE;
@@ -123,7 +141,7 @@ else
     NUM_CORES_PER_NODE=$(expr $TOTAL_NUM_PROCESSORS / $UNIQSLOTS) 
     log "Number of unique slots: ${UNIQSLOTS}" $LOG_FILE
     log "Running on these hosts:" $LOG_FILE
-    log ${UNIQHOSTS} $LOG_FILE
+    log "$(awk '{print $1 }' ${PE_HOSTFILE})" $LOG_FILE
     
     typeset TMP_FILE=$( mktemp )
     touch "${TMP_FILE}"
@@ -132,8 +150,7 @@ else
     
     processes=`bc <<< "$(($UNIQSLOTS*$NUM_CORES_PER_NODE))"`
     log "Processes running are : ${processes}" $LOG_FILE
-    
-    mpirun -np ${processes} --mca btl vader,self,openib -x LD_LIBRARY_PATH --hostfile ${TMP_FILE} ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER -P 0 >> $LOG_FILE
+    mpirun -np ${processes} --mca btl vader,self,openib -x LD_LIBRARY_PATH --hostfile ${TMP_FILE} ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS >> $LOG_FILE
     if $PROPAGATE;
     then
         # how do we get $PTYR_FILE

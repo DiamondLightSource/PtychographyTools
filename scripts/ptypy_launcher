@@ -1,4 +1,5 @@
 #!/bin/bash
+
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )" # this is the path to this launcher script
 
 source $SCRIPT_PATH/utils
@@ -7,8 +8,9 @@ usage() {
       echo "Usage:"
       echo "This is the main ptypy launcher for Diamond Light source."
       echo "It can be called in a number of ways depending on what is needed."
-
+      echo ":-h returns this help."
       echo ":-c: path to the cluster config file."
+      echo ":-l links together all reconstructions specified by the json and identifier."
       echo ":-j: path to the json file containing the reconstruction configuration."
       echo ":-i: identifier/scan_number. This can be a list in a file which ends .ptypy."
       echo ":-o: output	folder for the reconstruction (will be created).
@@ -17,8 +19,9 @@ usage() {
 }
 
 PROPAGATE=false
+LINK=false
 
-while getopts "hj:c:i:o:p:" opt; do
+while getopts "hlj:c:i:o:p:" opt; do
   case $opt in
     c )
       CLUSTER_CONFIG_FILE=$OPTARG;
@@ -35,6 +38,9 @@ while getopts "hj:c:i:o:p:" opt; do
       ;;
     o )
       OUTPUT_FOLDER=$OPTARG;
+      ;;
+    l )
+      LINK=true
       ;;
     p )
       PROPAGATE=true;
@@ -87,27 +93,57 @@ echo "The log files are:"
 echo "scan_number --> log file"
 
 # now the per-identifier tasks
-for IDENTIFIER in $IDENTIFIER_LIST; do
-    LOG_FILE="$LOG_DIRECTORY/scan_${IDENTIFIER}_$(date +'%Y%m%d_%H%M%S').log"
+# for linking the identifier needs to be the whole list.
+
+if $LINKED;
+then
+    set -- $IDENTIFIER_LIST
+    LOG_FILE="$LOG_DIRECTORY/scan_$1_linked_set_$(date +'%Y%m%d_%H%M%S').log"
     touch $LOG_FILE
-    echo "$IDENTIFIER --> $LOG_FILE"
+    echo "$IDENTIFIER (linked submission) --> $LOG_FILE"
     log "The cluster config file is set to: $CLUSTER_CONFIG_FILE" $LOG_FILE
     log "The json file is set to: $JSON_FILE" $LOG_FILE
     log "The output folder is set to $OUTPUT_FOLDER" $LOG_FILE
 
     if $PROPAGATE;
     then
-    log "I'll propagate the result" $LOG_FILE
-    qsub -jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive \
-          -l infiniband -l gpu=$NUM_GPUS_PER_NODE -l gpu_arch=$GPU_ARCH -q $CLUSTER_QUEUE -P $PROJECT \
-          -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYPY_VERSION -p $ZRANGE -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -l $LOG_FILE -p $ZRANGE >> $LOG_FILE
+        log "I'll propagate the result" $LOG_FILE
+        qsub -jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive \
+              -l infiniband -l gpu=$NUM_GPUS_PER_NODE -l gpu_arch=$GPU_ARCH -q $CLUSTER_QUEUE -P $PROJECT \
+              -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER_LIST -o $OUTPUT_FOLDER -v $PTYPY_VERSION -p $ZRANGE -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -l $LOG_FILE -p $ZRANGE -q >> $LOG_FILE
 
 
     else
-    log "Not propagating the results" $LOG_FILE
-    qsub -jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive \
-          -l infiniband -l gpu=$NUM_GPUS_PER_NODE -l gpu_arch=$GPU_ARCH -q $CLUSTER_QUEUE -P $PROJECT \
-          -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -l $LOG_FILE >> $LOG_FILE
+        log "Not propagating the results" $LOG_FILE
+        qsub -jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive \
+              -l infiniband -l gpu=$NUM_GPUS_PER_NODE -l gpu_arch=$GPU_ARCH -q $CLUSTER_QUEUE -P $PROJECT \
+              -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER_LIST -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -l $LOG_FILE -q >> $LOG_FILE
     fi
 
-done
+
+else
+    for IDENTIFIER in $IDENTIFIER_LIST; do
+        LOG_FILE="$LOG_DIRECTORY/scan_${IDENTIFIER}_$(date +'%Y%m%d_%H%M%S').log"
+        touch $LOG_FILE
+        echo "$IDENTIFIER --> $LOG_FILE"
+        log "The cluster config file is set to: $CLUSTER_CONFIG_FILE" $LOG_FILE
+        log "The json file is set to: $JSON_FILE" $LOG_FILE
+        log "The output folder is set to $OUTPUT_FOLDER" $LOG_FILE
+
+        if $PROPAGATE;
+        then
+            log "I'll propagate the result" $LOG_FILE
+            qsub -jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive \
+                  -l infiniband -l gpu=$NUM_GPUS_PER_NODE -l gpu_arch=$GPU_ARCH -q $CLUSTER_QUEUE -P $PROJECT \
+                  -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYPY_VERSION -p $ZRANGE -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -l $LOG_FILE -p $ZRANGE >> $LOG_FILE
+
+
+        else
+            log "Not propagating the results" $LOG_FILE
+            qsub -jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive \
+                  -l infiniband -l gpu=$NUM_GPUS_PER_NODE -l gpu_arch=$GPU_ARCH -q $CLUSTER_QUEUE -P $PROJECT \
+                  -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -l $LOG_FILE >> $LOG_FILE
+        fi
+
+    done
+fi
