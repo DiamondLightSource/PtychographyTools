@@ -60,20 +60,8 @@ while getopts "hqs:z:j:i:o:v:n:p:" opt; do
   esac
 done
 
-#module load ptypy/$PTYPY_VERSION >> $LOG_FILE
-echo "Extra args are$EXTRA_ARGS"
-echo "The log file is:$LOG_FILE"
-echo "The json file is:$JSON_FILE"
-echo "The identifier is:$IDENTIFIER"
-echo "The output folder is:$OUTPUT_FOLDER"
-echo "The ptypy version is:$PTYPY_VERSION"
-echo "The single threaded is:$SINGLE_THREADED"
-echo "PROPAGATE IS:$PROPAGATE"
-
-
 
 module load $PTYPY_VERSION >> "$LOG_FILE"
-
 source utils
 
 
@@ -119,10 +107,6 @@ fi
 
 
 
-
-
-
-
 if $SINGLE_THREADED;
 then
     log "Running single threaded ptypy, you are probably using the GPU engine at the moment" $LOG_FILE
@@ -134,23 +118,14 @@ then
         ptychotools.propagate -i $PTYR_FILE -o $OUTPUT_FOLDER/scan_$IDENTIFIER/ -z "$ZMIN $ZMAX" >> $LOG_FILE
     fi
 else
-    UNIQHOSTS=${TMPDIR}/machines-u
-    awk '{print $1 }' ${PE_HOSTFILE} | uniq > ${UNIQHOSTS}
-    log "uniq hosts: ${UNIQHOSTS}" $LOG_FILE
-    UNIQSLOTS=$(wc -l <${UNIQHOSTS})
-    NUM_CORES_PER_NODE=$(expr $TOTAL_NUM_PROCESSORS / $UNIQSLOTS) 
-    log "Number of unique slots: ${UNIQSLOTS}" $LOG_FILE
-    log "Running on these hosts:" $LOG_FILE
-    log "$(awk '{print $1 }' ${PE_HOSTFILE})" $LOG_FILE
-    
-    typeset TMP_FILE=$( mktemp )
-    touch "${TMP_FILE}"
-    cp -p ${UNIQHOSTS} "${TMP_FILE}"
-    sed -e "s/$/ slots=$NUM_CORES_PER_NODE/" -i ${TMP_FILE}
-    
-    processes=`bc <<< "$(($UNIQSLOTS*$NUM_CORES_PER_NODE))"`
-    log "Processes running are : ${processes}" $LOG_FILE
-    mpirun -np ${processes} --mca btl vader,self,openib -x LD_LIBRARY_PATH --hostfile ${TMP_FILE} ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS >> $LOG_FILE
+    HOSTLIST=$(cat ${PE_HOSTFILE} | awk '{print $1}' | tr "\n" ",") # comma separated list of hosts
+    echo "THE HOSTLIST IS $HOSTLIST" >> $LOG_FILE
+    NUMCORES=$(cat ${PE_HOSTFILE} | awk 'NR==1{print $2}') # to be overridden soon, but is just the number of cores per host
+    echo "THE number of cores per node is $NUMCORES" >> $LOG_FILE
+    HOST_LIST_WITH_CORES=${HOSTLIST//,/:$NUMCORES,} # puts in the number of cores where the comma would be
+    HOST_LIST_WITH_CORES=${HOST_LIST_WITH_CORES%?} # gets rid of the trailing comma
+    echo "THE HOST LIST WITH CORES IS $HOST_LIST_WITH_CORES" >> $LOG_FILE
+    mpirun -np ${TOTAL_NUM_PROCESSORS} --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS >> $LOG_FILE
     if $PROPAGATE;
     then
         # how do we get $PTYR_FILE
