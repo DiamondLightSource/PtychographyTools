@@ -110,7 +110,7 @@ fi
 if $SINGLE_THREADED;
 then
     log "Running single threaded ptypy, you are probably using the GPU engine at the moment" $LOG_FILE
-    ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS >> $LOG_FILE
+    ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS >> $LOG_FILE
     # how do we get $PTYR_FILE
     PTYR_FILE="$OUTPUT_FOLDER/scan_$IDENTIFIER/scan_$IDENTIFIER.ptyr" # this is a bit hardcoded...Is it a standard?
     if $PROPAGATE;
@@ -125,7 +125,7 @@ else
     HOST_LIST_WITH_CORES=${HOSTLIST//,/:$NUMCORES,} # puts in the number of cores where the comma would be
     HOST_LIST_WITH_CORES=${HOST_LIST_WITH_CORES%?} # gets rid of the trailing comma
     echo "THE HOST LIST WITH CORES IS $HOST_LIST_WITH_CORES" >> $LOG_FILE
-    mpirun -np ${TOTAL_NUM_PROCESSORS} --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptypy.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS >> $LOG_FILE
+    mpirun -np ${TOTAL_NUM_PROCESSORS} --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS >> $LOG_FILE
     if $PROPAGATE;
     then
         # how do we get $PTYR_FILE
