@@ -169,15 +169,15 @@ logger.debug('Selecting the first eigenmode of the probe...')
 weights, probes = ortho(first_storage_probe.data)
 probe = probes[0]
 
-probe_x = first_storage_probe.grids()[0][0, :, 0]
-probe_y = first_storage_probe.grids()[1][0, 0, :]
+probe_x = np.array(first_storage_probe.grids[0])[0, :, 0]
+probe_y = np.array(first_storage_probe.grids[1])[0, 0, :]
 
 
 first_scan_name_obj = obj_storages.keys()[0]
 first_storage_obj = obj_storages[first_scan_name_obj]
 obj = first_storage_obj.data[0]
-obj_x = first_storage_obj.grids()[0][0, :, 0]
-obj_y = first_storage_obj.grids()[1][0, 0, :]
+obj_x = np.array(first_storage_obj.grids[0])[0, :, 0]
+obj_y = np.array(first_storage_obj.grids[1])[0, 0, :]
 
 psize = first_storage_probe._psize
 energy = parameters.scans[first_scan_name_probe.strip('S').split('G')[0]].data.energy
