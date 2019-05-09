@@ -42,8 +42,11 @@ def propagate_probe(probe, psize, energy, distance, zrange, NPTS=1024):
     g.propagation = "nearfield"
 
     for idx, z in enumerate(zaxis):
-        g.distance = z
-        G = geometry.Geo(owner=P, pars=g)
-        propagated_projections[idx] = G.propagator.bw(probe)
+        if (z==0.0):
+            propagated_projections[idx] = probe
+        else:
+            g.distance = z
+            G = geometry.Geo(owner=P, pars=g)
+            propagated_projections[idx] = G.propagator.bw(probe)
     return propagated_projections, zaxis, yaxis, xaxis
 
