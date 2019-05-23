@@ -101,9 +101,11 @@ def get_folder_name(args):
     return output_path
 
 
-def parse_data_paths_with_parameters(parameters):
+def parse_data_paths_with_parameters(parameters, args):
     for scan_key, scan in parameters.scans.iteritems():
         data_entry = scan.data
+        run_name = parameters.run[0] if isinstance(parameters.run, list) else parameters.run
+        scan.data.dfile = "%s/scan_%s.ptyd" % (get_folder_name(args), str(run_name))
         for sub_entry_key, sub_entry in data_entry.iteritems():
             if isinstance(sub_entry, dict):
                 for dict_entry_key, dict_entry in sub_entry.iteritems():
@@ -150,13 +152,14 @@ if args.share_probe:
     if len(parameters.scans.keys())>1:
         log(3, "RuntimeError:For linked scans we should only have one scan listed in the json file.")
         raise RuntimeError("For linked scans we should only have one scan listed in the json file.")
-
     master_scan = parameters.scans[parameters.scans.keys()[0]]
+    master_scan.data.dfile = "%s/scan_%s.ptyd" % (get_folder_name(args), str(run_name))
     del parameters.scans[parameters.scans.keys()[0]]  # delete it for now, we will add it back in with a different name
     for identifier in args.identifier:
         parameters.run = identifier
         parameters.scans[str(identifier)] = master_scan.copy(99)
         data_entry = parameters.scans[str(identifier)].data
+        data_entry.dfile = "%s/scan_%s.ptyd" % (get_folder_name(args), str(parameters.run))
         for sub_entry_key, sub_entry in data_entry.iteritems():
             if isinstance(sub_entry, dict):
                 for dict_entry_key, dict_entry in sub_entry.iteritems():
@@ -186,7 +189,7 @@ if args.share_probe:
     P.finalize()
 else:
     # have to get the identifier into scan.data somehow.
-    parse_data_paths_with_parameters(parameters)
+    parse_data_paths_with_parameters(parameters, args)
     P = Ptycho(parameters, level=args.ptypy_level)
 
 

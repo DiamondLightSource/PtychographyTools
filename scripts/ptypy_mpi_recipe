@@ -60,7 +60,6 @@ while getopts "hqs:z:j:i:o:v:n:p:" opt; do
   esac
 done
 
-
 module load $PTYPY_VERSION >> "$LOG_FILE"
 source utils
 
@@ -121,11 +120,17 @@ else
     HOSTLIST=$(cat ${PE_HOSTFILE} | awk '{print $1}' | tr "\n" ",") # comma separated list of hosts
     echo "THE HOSTLIST IS $HOSTLIST" >> $LOG_FILE
     NUMCORES=$(cat ${PE_HOSTFILE} | awk 'NR==1{print $2}') # to be overridden soon, but is just the number of cores per host
+#    NUMCORES=10
     echo "THE number of cores per node is $NUMCORES" >> $LOG_FILE
     HOST_LIST_WITH_CORES=${HOSTLIST//,/:$NUMCORES,} # puts in the number of cores where the comma would be
     HOST_LIST_WITH_CORES=${HOST_LIST_WITH_CORES%?} # gets rid of the trailing comma
     echo "THE HOST LIST WITH CORES IS $HOST_LIST_WITH_CORES" >> $LOG_FILE
-    mpirun -np ${TOTAL_NUM_PROCESSORS} --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS >> $LOG_FILE
+    mpi_params="-np ${TOTAL_NUM_PROCESSORS} --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
+    echo "The mpi params are $mpi_params" >> $LOG_FILE
+    mpirun $mpi_params >> $LOG_FILE
+
+#    mpirun -np 100 --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS >> $LOG_FILE
+
     if $PROPAGATE;
     then
         # how do we get $PTYR_FILE
