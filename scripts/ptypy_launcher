@@ -96,11 +96,15 @@ then
     echo "Using Hamilton"
     module load hamilton
 #    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH"
-    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE"
+    NUM_NODES=$(expr $TOTAL_NUM_PROCESSORS / 40)
+    MEMORY_REQUEST=$(($NUM_NODES*360))G  # for Hamilton we hardcode 360GB
+    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,m_mem_free=$MEMORY_REQUEST"
 
 else
     module load global/cluster-quiet
-    qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH -q $CLUSTER_QUEUE"
+    NUM_NODES=$(expr $TOTAL_NUM_PROCESSORS / 20)
+    MEMORY_REQUEST=$(($NUM_NODES*240))G  # for com14 we hardcode 250GB
+    qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE"
 fi
 
 echo "The log files are:"
