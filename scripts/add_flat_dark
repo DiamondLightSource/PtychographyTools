@@ -1,0 +1,78 @@
+#! /dls_sw/apps/ptypy/temporary_environment/miniconda/envs/full_dependencies/bin/python
+
+import h5py as h5
+import os
+import datetime
+import logging
+import argparse
+
+parser = argparse.ArgumentParser(description='Checks if the nexus file has a flat, if not adds it to NXdetector. Also can add a dark if needed. Operates in place on the NXcxi_ptycho definition.')
+
+
+parser.add_argument("--data-file", "-d",
+                    dest="data_file",
+                    help="The path to the hdf5 file containing the data",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--dark-file", "-q",
+                    dest="dark_file",
+                    help="The path to a file containing the dark field",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--dark-key", "-m",
+                    dest="dark_key",
+                    help="The key to the field containing the dark field",
+                    default=None,
+                    type=str)
+
+args = parser.parse_args()
+
+# will assume nxcxi_ptycho.
+
+log_folder = '/dls/tmp/ptypy_logging/add_flat_dark/'
+logfile = log_folder + 'add_flat_dark_%s.log' % datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+if not os.path.exists(log_folder):
+    print("Making directory")
+    os.makedirs(log_folder)
+logging.basicConfig(filename=logfile, level=logging.DEBUG)
+
+DETECTOR_KEY = 'entry_1/instrument_1/detector_1/'
+FLATFIELD_PATH = '/dls_sw/i08/software/flatfield/flatfield_100iterations_700eV_%sx%s.h5'
+FLATFIELD_KEY = '/flat'
+logging.log(3, "I am in the flat and dark adder")
+
+
+f = h5.File(args.data_file, 'r+')
+try:
+    a_= f[DETECTOR_KEY + 'flatfield']
+    print("found flatfield")
+except KeyError:
+    print("did not find flatfield")
+    logging.log(3, "No flatfield found in file, linking one based on shape.")
+    data_shape = f[DETECTOR_KEY+'data'].shape
+    str_shape = tuple([str(ix) for ix in (data_shape[-2:])])
+    print str_shape
+    selected_flat_path = FLATFIELD_PATH % str_shape
+    logging.log(3, "Selecting flat at: %s" % selected_flat_path)
+    relevant_flat = h5.File(selected_flat_path, 'r')[FLATFIELD_KEY][...]
+    f[DETECTOR_KEY + 'flatfield'] = relevant_flat
+
+try:
+    b_ = f[DETECTOR_KEY + 'darkfield']
+except KeyError:
+    logging.log(3, "No darkfield found in file.")
+    logging.log(3, "Submitted dark field file and key are:%s, %s" % (args.dark_file, args.dark_key))
+    if None not in [args.dark_file, args.dark_key]:
+        dark = h5.File(args.dark_file)[args.dark_key][...]
+        if len(dark.shape) == 3:
+            dark = dark[0]
+        elif len(dark.shape) == 4:
+            dark = dark[0, 0]
+        elif len(dark.shape)>4:
+            raise IndexError("The darkfield has dimensions I don't recognise.")
+        f[DETECTOR_KEY + 'darkfield'] = dark
+    else:
+        raise RuntimeError("Without a dark we won't be able to reconstruct.")          
+

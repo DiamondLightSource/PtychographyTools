@@ -96,8 +96,8 @@ then
     echo "Using Hamilton"
     module load hamilton
 #    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH"
-    MEMORY_REQUEST=9G # for Hamilton we hardcode 9G per slot
-    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,m_mem_free=$MEMORY_REQUEST"
+    MEMORY_REQUEST=7G # for Hamilton we hardcode 9G per slot
+    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE"
 
 else
     module load global/cluster-quiet

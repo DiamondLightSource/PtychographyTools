@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+
+'''
+writes the dawn processing bean file.
+'''
+
+import argparse
+import json
+
+
+
+parser = argparse.ArgumentParser(description='Writes the dawn processing bean json file.')
+
+
+parser.add_argument("name",
+                    help="The name field for the bean.",
+                    type=str)
+
+parser.add_argument('--working-directory', '-W',
+                    dest="working_directory",
+                    help="The processing working directory.",
+                    type=str)
+
+parser.add_argument("--bean-path",
+                    dest="bean_path",
+                    help="The path the bean will be written to",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--file-path", "-I",
+                    dest="file_path",
+                    help="The path of the input data",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--dataset-path", "-K",
+                    dest="dataset_path",
+                    help="The path of the data inside the file",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--output-file_path", "-O",
+                    dest="output_file_path",
+                    help="The path to the output file. ",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--scan-rank",
+                    dest="scan_rank",
+                    help="The rank of the scan",
+                    default=2,
+                    type=int)
+
+parser.add_argument("--processing-path",
+                    dest="processing_path",
+                    help="The path to the dawn processing list",
+                    default=2,
+                    type=str)
+
+parser.add_argument("--xmx",
+                    dest="xmx",
+                    help="memory for the virtual machine",
+                    default="1024m",
+                    type=str)
+
+parser.add_argument("--number-of-cores",
+                    dest="number_of_cores",
+                    help="number of cores to use",
+                    default=1,
+                    type=int)
+
+parser.add_argument("--isreadable",
+                    dest="isreadable",
+                    help="is the file readable",
+                    default=True,
+                    type=bool)
+
+parser.add_argument("--data-key",
+                    dest="data_key",
+                    help="path to the live keys",
+                    default='/entry/solstice_scan',
+                    type=str)
+
+parser.add_argument("--delete-processing-file",
+                    dest="delete_processing_file",
+                    help="should I delete the processing file",
+                    default=False,
+                    type=bool)
+
+parser.add_argument("--monitor-for-overwrite",
+                    dest="monitor_for_overwrite",
+                    help="should I monitor this for overwrite",
+                    default=False,
+                    type=bool)
+
+parser.add_argument("--timeout",
+                    dest="timeout",
+                    help="the timeout",
+                    default=60000,
+                    type=int)
+
+parser.add_argument("--link-parent-entry",
+                    dest="link_parent_entry",
+                    help="the timeout",
+                    default=True,
+                    type=bool)
+
+
+args = parser.parse_args()
+
+print("Populating out dictionary....")
+
+out_dict = {"name": args.name,
+            "runDirectory": args.working_directory,
+            "filePath": args.file_path,
+            "datasetPath": args.dataset_path,
+            "outputFilePath": args.output_file_path,
+            "scanRank": args.scan_rank,
+            "processingPath": args.processing_path,
+            "xmx": args.xmx,
+            "numberOfCores": args.number_of_cores,
+            "readable": args.isreadable,
+            "dataKey": args.data_key,
+            "deleteProcessingFile": args.delete_processing_file,
+            "monitorForOverwrite": args.monitor_for_overwrite,
+            "timeOut": args.timeout,
+            "linkParentEntry": args.link_parent_entry,
+            "scanRank": 2}
+print("Populated out dictionary.")
+
+print("Opening file to write bean to in: %s" % args.bean_path)
+with open(args.bean_path, 'w') as f:
+    print("Now writing to file.")
+    f.write(json.dumps(out_dict, indent=4, sort_keys=True))
+print("Finished writing bean.")
