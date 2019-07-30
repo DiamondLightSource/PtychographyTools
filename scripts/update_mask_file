@@ -1,0 +1,170 @@
+#! /dls_sw/apps/ptypy/temporary_environment/miniconda/envs/full_dependencies/bin/python
+
+import h5py as h5
+import os
+import numpy as np
+import datetime
+import time
+import logging
+import argparse
+
+parser = argparse.ArgumentParser(description='Updates a mask if the mask exists, or creates a new mask if not.')
+
+
+parser.add_argument("--data-file", "-d",
+                    dest="data_file",
+                    help="The path to the hdf5 file containing the data",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--data-key", "-k",
+                    dest="data_key",
+                    help="The key to the field containing the data",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--existing-mask-file", "-q",
+                    dest="existing_mask_file",
+                    help="The path to the hdf5 file containing the mask",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--existing-mask-key", "-m",
+                    dest="existing_mask_key",
+                    help="The key to the field containing the existing mask",
+                    default='/entry/mask/mask',
+                    type=str)
+
+parser.add_argument("--output-file", "-o",
+                    dest="output_file",
+                    help="The path to the output mask file",
+                    default=None,
+                    type=str)
+
+parser.add_argument("--high-threshold", "-h",
+                    dest="high_thresh",
+                    help="The maximum counts to be passes",
+                    default=None,
+                    type=float)
+
+parser.add_argument("--low-threshold", "-l",
+                    dest="low_threshold",
+                    help="The lowest count that passes.",
+                    default=None,
+                    type=float)
+
+parser.add_argument("--sigma-exclusion", "-s",
+                    dest="sigma_exclusion",
+                    help="The path to the output mask file",
+                    default=None,
+                    type=str)
+
+args = parser.parse_args()
+
+# will assume nxcxi_ptycho.
+
+log_folder = '/dls/tmp/ptypy_logging/update_mask_file/'
+logfile = log_folder + 'add_flat_dark_%s.log' % datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+if not os.path.exists(log_folder):
+    print("Making directory")
+    os.makedirs(log_folder)
+logging.basicConfig(filename=logfile, level=logging.DEBUG)
+
+logging.debug("I am in the mask maker")
+
+
+if args.data_file is None:
+    output_file_missing_msg = "You need to set the data file, -d"
+    logging.error(output_file_missing_msg)
+    raise ValueError(output_file_missing_msg)
+
+if args.data_key is None:
+    data_key_missing_msg = "You need to set the data key, -k"
+    logging.error(data_key_missing_msg)
+    raise ValueError(data_key_missing_msg)
+
+logging.debug(
+        "Loading the data file with path:%s and key:%s" % (args.data_file, args.data_key))
+try:
+    t_before_load = time.time()
+    dset = h5.File(args.data_file,'r')[args.data_key][...]
+    t_after_load = time.time()
+    logging.debug("Data took %s s to load" % (t_after_load-t_before_load))
+    mask_shape = dset.shape[-2:]
+except KeyError as input_data_keyerror:
+    logging.error("Could not find the data key! Exception:%s" % str(input_data_keyerror))
+    raise input_data_keyerror
+except IOError as input_data_ioerror:
+    logging.error("Could not find the  data file Exception:%s" % str(input_data_ioerror))
+    raise input_data_ioerror
+except Exception as input_data_otherexception:
+    logging.error("Unknown error loading the data %s" % str(input_data_otherexception))
+    raise input_data_otherexception
+
+
+
+if args.existing_mask_file is not None:
+    logging.debug(
+        "Loading the existing mask file with path:%s and key:%s" % (args.existing_mask_file, args.existing_mask_key))
+    try:
+        mask = h5.File(args.existing_mask_file, 'r')[args.existing_mask_key][...]
+    except KeyError as input_mask_keyerror:
+        logging.error("Could not find the existing mask entry! Exception:%s" % str(input_mask_keyerror))
+        raise input_mask_keyerror
+    except IOError as input_mask_ioerror:
+        logging.error("Could not find the existing mask file! Exception:%s" % str(input_mask_ioerror))
+        raise input_mask_ioerror
+    except Exception as input_mask_other_exception:
+        logging.error("Unknown error loading the mask %s" % str(input_mask_other_exception))
+        raise input_mask_other_exception
+    if mask.shape != mask_shape:
+        raise ValueError("Existing mask shape: %s, is not the same as the required shape of %s" % (mask.shape, mask_shape))
+else:
+    logging.debug('No existing mask given. Setting initial mask to ones of shape: %s' % str(mask_shape))
+    mask = np.zeros(mask_shape)
+
+if args.output_file is None:
+    output_file_missing_msg = "You need to set the output file, -o"
+    logging.error(output_file_missing_msg)
+    raise ValueError(output_file_missing_msg)
+
+try:
+    output_file = h5.File(args.output_file, 'w')
+except IOError as output_mask_file_error:
+    logging.error("Could not write the output file! Exception:%s" % str(output_mask_file_error))
+    raise output_mask_file_error
+
+logging.debug('Creating the mask entry in the output file.')
+entry = output_file.create_group('entry')
+mask_group = entry.create_group('mask')
+mask_group.create_dataset('mask', shape=dset.shape[-2:])
+
+logging.debug("Generating the mask.")
+
+low_thresh = args.low_thresh if args.low_thresh is not None else 0.
+high_thresh = args.high_thresh if args.high_thresh is not None else np.inf
+
+npts = np.prod(dset.shape[:-2])
+
+dset_to_iterate = np.reshape(dset, (npts,)+mask_shape)
+
+for idx in range(npts):
+    logging.debug("Iterating through data slice %s of %s" % (str(idx), str(npts)))
+    mask[dset_to_iterate[idx] < low_thresh] = 0
+    mask[dset_to_iterate[idx] > high_thresh] = 0
+
+
+if args.sigma_exclusion is not None:
+    logging.debug("Calculating mean")
+    ave = np.mean(dset_to_iterate, axis=0)
+    logging.debug("Done")
+    logging.debug("Calculating sigma")
+    sig = np.std(dset_to_iterate, axis=0)
+    logging.debug("Done")
+    for idx in range(npts):
+        logging.debug("Iterating through data slice %s of %s" % (str(idx), str(npts)))
+        mask[dset_to_iterate[idx] < ave - args.sigma_exclusion * sig] = 0
+        mask[dset_to_iterate[idx] > ave + args.sigma_exclusion * sig] = 0
+
+mask_group['mask'] = mask
+output_file.close()
