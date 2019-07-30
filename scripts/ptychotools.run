@@ -4,10 +4,13 @@ import argparse
 import json
 import yaml
 import os
+
+from ptychotools.utils.io import convert_ptyr_to_mapping
 from ptypy.core import Ptycho
 from ptypy.utils.verbose import log
 from ptypy.utils import parallel
 from ptypy import utils as u
+
 
 u.verbose.set_level(3)
 parser = argparse.ArgumentParser(description='Runs a ptychography from the command line.')
@@ -192,4 +195,9 @@ else:
     parse_data_paths_with_parameters(parameters, args)
     P = Ptycho(parameters, level=args.ptypy_level)
 
+# now output the mapping compatible files
+if parallel.master:
+    log(3, "Converting to nexus files...")
+    convert_ptyr_to_mapping(parameters.io.rfile, border=25)
+    log(3, "Done.")
 

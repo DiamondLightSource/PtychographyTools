@@ -97,7 +97,7 @@ then
     module load hamilton
 #    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH"
     MEMORY_REQUEST=9G # for Hamilton we hardcode 9G per slot
-    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,m_mem_free=$MEMORY_REQUEST"
+    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE"
 
 else
     module load global/cluster-quiet
@@ -116,6 +116,7 @@ then
     set -- $IDENTIFIER_LIST
     LOG_FILE="$LOG_DIRECTORY/scan_$1_linked_set_$(date +'%Y%m%d_%H%M%S').log"
     touch $LOG_FILE
+    chmod +rw $LOG_FILE
     log "The log file is set to: $LOG_FILE" $LOG_FILE
     echo "$1 (linked submission) --> $LOG_FILE"
     if $PROPAGATE;
@@ -145,6 +146,7 @@ else
     for IDENTIFIER in $IDENTIFIER_LIST; do
         LOG_FILE="$LOG_DIRECTORY/scan_${IDENTIFIER}_$(date +'%Y%m%d_%H%M%S').log"
         touch $LOG_FILE
+        chmod +rw $LOG_FILE
         echo "$IDENTIFIER --> $LOG_FILE"
         log "I am here:" $LOG_FILE
         log "The log file is set to: $LOG_FILE" $LOG_FILE

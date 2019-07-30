@@ -55,7 +55,6 @@ except KeyError:
     str_shape = tuple([str(ix) for ix in (data_shape[-2:])])
     print str_shape
     selected_flat_path = FLATFIELD_PATH % str_shape
-    logging.log(3, "Selecting flat at: %s" % selected_flat_path)
     relevant_flat = h5.File(selected_flat_path, 'r')[FLATFIELD_KEY][...]
     f[DETECTOR_KEY + 'flatfield'] = relevant_flat
 
@@ -65,7 +64,7 @@ except KeyError:
     logging.log(3, "No darkfield found in file.")
     logging.log(3, "Submitted dark field file and key are:%s, %s" % (args.dark_file, args.dark_key))
     if None not in [args.dark_file, args.dark_key]:
-        dark = h5.File(args.dark_file)[args.dark_key][...]
+        dark = h5.File(args.dark_file, 'r')[args.dark_key][...]
         if len(dark.shape) == 3:
             dark = dark[0]
         elif len(dark.shape) == 4:
