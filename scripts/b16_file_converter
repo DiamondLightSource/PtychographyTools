@@ -54,6 +54,7 @@ if (args.output_file is None) or os.path.exists(args.output_file):
     raise IOError('You need to specify an output file path that does not yet exist. We will create this. Options is -o.')
 
 logging.debug('tif_folder:%s, dat_file:%s, output_file:%s' % (args.tif_folder, args.dat_file, args.output_file))
+print('tif_folder:%s, dat_file:%s, output_file:%s' % (args.tif_folder, args.dat_file, args.output_file))
 positions = np.loadtxt(args.dat_file, skiprows=12, usecols=(0, 1))
 x = positions[:, 0]
 y = positions[:, 1]
@@ -62,14 +63,17 @@ data_frame = fabio.open(os.path.join(args.tif_folder + '00001.tif'))
 
 if args.mask_file is None:
     logging.debug('No mask specified so will not mask anything.')
+    print('No mask specified so will not mask anything.')
     mask=np.ones(data_frame.data.shape)
 else:
     mask = h5.File(args.mask_file,'r')['/mask'][...]
 
 #first lets make the converted file and datasets
 logging.debug('Now going into the file writing...')
+print('Now going into the file writing...')
 with h5.File(args.output_file, 'w') as fout:
     logging.debug("writing converted file to %s" % (args.output_file))
+    print("writing converted file to %s" % (args.output_file))
     fout.create_group('entry')
     fout['entry'].create_group('merlin')
     fout['entry/merlin'].create_dataset(name='data', shape=(len(x),)+data_frame.data.shape)
@@ -83,5 +87,5 @@ with h5.File(args.output_file, 'w') as fout:
     for i in range(1, len(x)+1):
         fout['entry/merlin/data'][i-1] = data_frame.getframe(i).data
 
-
+print("Conversion done.")
 logging.debug("Conversion done.")

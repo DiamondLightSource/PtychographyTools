@@ -65,7 +65,7 @@ except KeyError:
     logging.log(3, "No darkfield found in file.")
     logging.log(3, "Submitted dark field file and key are:%s, %s" % (args.dark_file, args.dark_key))
     if None not in [args.dark_file, args.dark_key]:
-        dark = h5.File(args.dark_file)[args.dark_key][...]
+        dark = h5.File(args.dark_file, 'r')[args.dark_key][...]
         if len(dark.shape) == 3:
             dark = dark[0]
         elif len(dark.shape) == 4:
