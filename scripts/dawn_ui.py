@@ -66,6 +66,7 @@ def ortho(modes):
     return amp, nplist
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 def rmphaseramp(a, weight=None, return_phaseramp=False):
     """
     Attempts to remove the phase ramp in a two-dimensional complex array
@@ -125,6 +126,8 @@ def rmphaseramp(a, weight=None, return_phaseramp=False):
 
 =======
 >>>>>>> changes plotting support to be zmq rather than off of nfs
+=======
+>>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
 def remove_ramp(unwrapped_phase):
     def make_plane(xsc, xoff, ysc, yoff, const, shape):
         Y, X = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]))
@@ -154,18 +157,24 @@ def update_plot_from_ptyr(fpath, border=50):
     # print len(object_x), obj_data.shape
     phase_obj = np.angle(obj_data)
 <<<<<<< HEAD
+<<<<<<< HEAD
     from skimage.restoration import unwrap_phase
     print("unwrapping phase")
     phase_obj = unwrap_phase(phase_obj)
     phase_obj = remove_ramp(phase_obj)
 =======
+=======
+>>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
 
     # from skimage.restoration import unwrap_phase
     # print("unwrapping phase")
     phase_obj = unwrap_phase(phase_obj)
     phase_obj = remove_ramp(phase_obj)
 
+<<<<<<< HEAD
 >>>>>>> changes plotting support to be zmq rather than off of nfs
+=======
+>>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
     dnp.plot.image(np.abs(obj_data), {'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Modulus', resetaxes=True)
     dnp.plot.image(phase_obj,{'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Phase', resetaxes=True)
     dnp.plot.image(obj_data, {'x/ mm': object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Complex', resetaxes=True)
@@ -373,11 +382,16 @@ class DawnUI(object):
 if __name__ == '__main__':
     try:
 <<<<<<< HEAD
+<<<<<<< HEAD
 	from datetime import datetime
 =======
 
         from datetime import datetime
 >>>>>>> changes plotting support to be zmq rather than off of nfs
+=======
+
+        from datetime import datetime
+>>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
         now = datetime.now()
         timstmp = now.strftime("%Y%m%d_%H%M%S")
         logger = logging.getLogger()
@@ -406,6 +420,7 @@ if __name__ == '__main__':
         while True:
             dawn_job.read_log()
 <<<<<<< HEAD
+<<<<<<< HEAD
             latest_ptyr = dawn_job.get_latest_ptyr_file()
             if latest_ptyr is not None:
                 while True:
@@ -424,6 +439,8 @@ if __name__ == '__main__':
 
             if dawn_job.reconstruction_finished:
 =======
+=======
+>>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
             # latest_ptyr = dawn_job.get_latest_ptyr_file()
             # if latest_ptyr is not None:
             #     while True:
@@ -451,7 +468,10 @@ if __name__ == '__main__':
                     update_plot_from_zmqdp(dp, border=80)
 
             if pc is not None and pc.status == pc.STOPPED:
+<<<<<<< HEAD
 >>>>>>> changes plotting support to be zmq rather than off of nfs
+=======
+>>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
                 break
             time.sleep(3.)
     except KeyboardInterrupt, SystemExit:
