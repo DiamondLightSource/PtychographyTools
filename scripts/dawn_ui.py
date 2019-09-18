@@ -65,8 +65,6 @@ def ortho(modes):
     amp /= amp.sum()
     return amp, nplist
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 def rmphaseramp(a, weight=None, return_phaseramp=False):
     """
     Attempts to remove the phase ramp in a two-dimensional complex array
@@ -124,10 +122,6 @@ def rmphaseramp(a, weight=None, return_phaseramp=False):
     else:
         return a*p
 
-=======
->>>>>>> changes plotting support to be zmq rather than off of nfs
-=======
->>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
 def remove_ramp(unwrapped_phase):
     def make_plane(xsc, xoff, ysc, yoff, const, shape):
         Y, X = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]))
@@ -156,27 +150,12 @@ def update_plot_from_ptyr(fpath, border=50):
     obj_data = obj['data'][0, border:-border, border:-border]
     # print len(object_x), obj_data.shape
     phase_obj = np.angle(obj_data)
-<<<<<<< HEAD
-<<<<<<< HEAD
     from skimage.restoration import unwrap_phase
     print("unwrapping phase")
     phase_obj = unwrap_phase(phase_obj)
     phase_obj = remove_ramp(phase_obj)
-=======
-=======
->>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
-
-    # from skimage.restoration import unwrap_phase
-    # print("unwrapping phase")
-    phase_obj = unwrap_phase(phase_obj)
-    phase_obj = remove_ramp(phase_obj)
-
-<<<<<<< HEAD
->>>>>>> changes plotting support to be zmq rather than off of nfs
-=======
->>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
     dnp.plot.image(np.abs(obj_data), {'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Modulus', resetaxes=True)
-    dnp.plot.image(phase_obj,{'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Phase', resetaxes=True)
+    dnp.plot.image(np.angle(obj_data),{'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Phase', resetaxes=True)
     dnp.plot.image(obj_data, {'x/ mm': object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Complex', resetaxes=True)
 
     probe = f['/content/probe']
@@ -286,6 +265,7 @@ class DawnUI(object):
 
     def create_log_file(self):
         logdir = self.scan_directory
+        print("Logging going in: %s" % logdir   )
         if not os.path.exists(logdir):
             os.makedirs(logdir, 0o777)
         self.log_file = os.path.join(logdir, "i14_ptypy_gui.%s" % datetime.strftime(datetime.now(), "%y%m%d_%H%M%S_%f"))
@@ -372,26 +352,17 @@ class DawnUI(object):
             else:
                 latest_file = os.path.join(self.dumps_directory, files[-1])
 
-#        if latest_file==self.latest_ptyr:
-#            return None
-#        else:
-        self.latest_ptyr = latest_file
-        return latest_file
+        if latest_file==self.latest_ptyr:
+            return None
+        else:
+            self.latest_ptyr = latest_file
+            return latest_file
 
 
 if __name__ == '__main__':
     try:
-<<<<<<< HEAD
-<<<<<<< HEAD
-	from datetime import datetime
-=======
 
         from datetime import datetime
->>>>>>> changes plotting support to be zmq rather than off of nfs
-=======
-
-        from datetime import datetime
->>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
         now = datetime.now()
         timstmp = now.strftime("%Y%m%d_%H%M%S")
         logger = logging.getLogger()
@@ -419,28 +390,6 @@ if __name__ == '__main__':
         pc = None
         while True:
             dawn_job.read_log()
-<<<<<<< HEAD
-<<<<<<< HEAD
-            latest_ptyr = dawn_job.get_latest_ptyr_file()
-            if latest_ptyr is not None:
-                while True:
-                    try:
-                        latest_ptyr = dawn_job.get_latest_ptyr_file()
-                        print("Trying to update plot from %s" % latest_ptyr)
-                        update_plot_from_ptyr(latest_ptyr, border=90)
-                        print("Found file, updated")
-                        break
-                    except IOError:
-                        print("Couldn't read file. File system blah, sleeping for 5 seconds")
-                        time.sleep(5.) # make sure the file is closed
-                    except KeyError:
-                        print("Couldn't read dataset. File system blah, sleeping for 5 seconds")
-                        time.sleep(5.)
-
-            if dawn_job.reconstruction_finished:
-=======
-=======
->>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
             # latest_ptyr = dawn_job.get_latest_ptyr_file()
             # if latest_ptyr is not None:
             #     while True:
@@ -468,10 +417,6 @@ if __name__ == '__main__':
                     update_plot_from_zmqdp(dp, border=80)
 
             if pc is not None and pc.status == pc.STOPPED:
-<<<<<<< HEAD
->>>>>>> changes plotting support to be zmq rather than off of nfs
-=======
->>>>>>> 26f37c048fd12c7693da4cdb66e54f282ee2593c
                 break
             time.sleep(3.)
     except KeyboardInterrupt, SystemExit:
