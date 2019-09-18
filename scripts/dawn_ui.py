@@ -4,9 +4,6 @@ THis is a hack to work with the dawn gui
 
 
 import sys
-import logging
-from datetime import datetime
-import subprocess
 import scisoftpy as dnp
 import os
 import time
@@ -16,8 +13,11 @@ import h5py as h5
 import logging
 import procrunner
 import glob
+import re
 
-
+#sys.path.insert(0, "/dls/science/users/clb02321/DAWN_nightly_broke/latest_master/build/lib")
+# sys.path.insert(0, "/dls_sw/apps/ptypy/latest_rhel7/lib.linux-x86_64-2.7")
+sys.path.insert(0, "/dls_sw/apps/ptypy/latest_rhel7/lib")
 def cabs2(A):
     """
     Squared absolute value for an arraobject_y `A`.
@@ -155,7 +155,7 @@ def update_plot_from_ptyr(fpath, border=50):
     phase_obj = unwrap_phase(phase_obj)
     phase_obj = remove_ramp(phase_obj)
     dnp.plot.image(np.abs(obj_data), {'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Modulus', resetaxes=True)
-    dnp.plot.image(phase_obj,{'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Phase', resetaxes=True)
+    dnp.plot.image(np.angle(obj_data),{'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Phase', resetaxes=True)
     dnp.plot.image(obj_data, {'x/ mm': object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Complex', resetaxes=True)
 
     probe = f['/content/probe']
@@ -171,6 +171,55 @@ def update_plot_from_ptyr(fpath, border=50):
     # print probe_data.shape
     dnp.plot.image(np.abs(probe_data),{'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6}, 'Probe Modulus')
     dnp.plot.image(probe_data,{'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6}, 'Probe Complex')
+
+def update_plot_from_zmqdp(dp, border=50):
+
+    probe, obj, meta = dp
+    if len(obj.keys())>0:
+        obj = obj[obj.keys()[0]]
+
+        try:
+            obj_data = obj['data'][0, border:-border, border:-border]
+            object_x, object_y = obj['grids']
+            object_x = object_x[0, :, 0]
+            object_y = object_y[0, 0, :]
+            object_x = object_x[border:-border]
+            object_y = object_y[border:-border]
+            # print len(object_x), obj_data.shape
+            # print("obj data shape/:%s" % str(obj_data.shape))
+            phase_obj = np.angle(obj_data)
+
+            from skimage.restoration import unwrap_phase
+            # print("unwrapping phase")
+            phase_obj = unwrap_phase(phase_obj)
+            phase_obj = remove_ramp(phase_obj)
+            # object_x = np.arange(obj_data.shape[0])
+            # object_y = np.arange(obj_data.shape[1])
+            dnp.plot.image(np.abs(obj_data), {'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Modulus', resetaxes=True)#, {'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Modulus', resetaxes=True)
+            dnp.plot.image(phase_obj, {'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Phase', resetaxes=True)#,{'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Phase', resetaxes=True)
+            dnp.plot.image(obj_data, {'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Complex', resetaxes=True)#, {'x/ mm': object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Complex', resetaxes=True)
+
+            probe = probe[probe.keys()[0]]
+            probe_x, probe_y = probe['grids']
+            # print probe_x.shape, probe_y.shape
+            probe_x = probe_x[0, :, 0]
+            probe_y = probe_y[0, 0, :]
+            amp_list, probe_data = ortho(probe['data'])
+            probe_data = probe_data[0]
+            # print probe_data.shape, probe_y.shape
+            # print("PLotting data")
+            # probe_x = np.arange(probe_data.shape[0])
+            # probe_y = np.arange(probe_data.shape[1])
+            dnp.plot.image(np.angle(probe_data),{'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6}, 'Probe Phase')#,{'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6}, 'Probe Phase')
+            # print probe_data.shape
+            dnp.plot.image(np.abs(probe_data), {'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6}, 'Probe Modulus')#,{'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6}, 'Probe Modulus')
+            dnp.plot.image(probe_data, {'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6},'Probe Complex')#,{'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6}, 'Probe Complex')
+            # print("Data plotted")
+        except KeyError:
+            print("Server has no data to plot.")
+    else:
+        print("Server has no data to plot")
+
 
 def initialise_dawn_windows():
     dnp.plot.window_manager.open_view('Object Modulus')
@@ -201,6 +250,8 @@ class DawnUI(object):
         self.plot_files_list = []
         self.reconstruction_finished = False
         self.latest_ptyr = None
+        self.interaction_ip = None
+        self.interaction_port = None
         self.create_log_file()
 
     def cluster_config_from_file(self, fpath):
@@ -221,20 +272,26 @@ class DawnUI(object):
         f = open(self.log_file, 'w+')
         f.close()
         os.chmod(self.log_file, 0o775)
+        print("Logfile:%s" % self.log_file)
 
     def launch_cluster_job(self):
+        if self.beamline == 'dls':
+            project = 'ptychography'
+        else:
+            project = self.beamline
+
         total_processors = self._cluster_config["TOTAL_NUM_PROCESSORS"]
         qsub_params = " ".join(["qsub",
                                 "-terse", " "
                                 "-N", "ptypy_gui_%s" % self.beamline,
-                                "-P", self.beamline,
+                                "-P", project,
                                 "-pe", "openmpi", total_processors,
                                 "-l", "exclusive",
                                 "-l", "gpu=" + self._cluster_config["NUM_GPUS_PER_NODE"],
                                 "-l", "gpu_arch=" + self._cluster_config["GPU_ARCH"],
                                 "-o", self.log_file,
                                 "-e", self.log_file,
-                                "/dls_sw/apps/ptychography_tools/latest/scripts/ptypy_mpi_recipe",
+                                "/home/clb02321/PycharmProjects/ptycho-tools-ui/scripts/ptypy_mpi_recipe",
                                 "-j", self.config_file,
                                 "-i", self.identifier,
                                 "-o", self.output_directory,
@@ -242,6 +299,7 @@ class DawnUI(object):
                                 "-n", total_processors,
                                 "-s", self._cluster_config["SINGLE_THREADED"],
                                 "-z", self.log_file])
+        print qsub_params
 
         commands = (". /etc/profile.d/modules.sh",
                     "module load global/hamilton",
@@ -273,6 +331,9 @@ class DawnUI(object):
                 idx += 1
                 if idx > self.current_log_line_number:
                     print(line) # this should probably not be here
+                    if not self.interaction_ip:
+                        self.interaction_ip = "tcp://"+line.split(':')[1] if re.search("Interaction is broadcast on host:", line) else None
+                        self.interaction_port = line.split(':')[2].strip('\n') if re.search("Interaction is broadcast on host:", line) else None
         self.current_log_line_number = idx
 
     def update_plots(self, ptyr_file):
@@ -291,16 +352,17 @@ class DawnUI(object):
             else:
                 latest_file = os.path.join(self.dumps_directory, files[-1])
 
-#        if latest_file==self.latest_ptyr:
-#            return None
-#        else:
-        self.latest_ptyr = latest_file
-        return latest_file
+        if latest_file==self.latest_ptyr:
+            return None
+        else:
+            self.latest_ptyr = latest_file
+            return latest_file
 
 
 if __name__ == '__main__':
     try:
-	from datetime import datetime
+
+        from datetime import datetime
         now = datetime.now()
         timstmp = now.strftime("%Y%m%d_%H%M%S")
         logger = logging.getLogger()
@@ -319,30 +381,42 @@ if __name__ == '__main__':
         if not os.path.exists(output_directory):
             os.makedirs(output_directory, 0o777)
 
-        launcher_script = '/dls_sw/apps/ptychography_tools/latest/scripts/ptypy_launcher'
+        launcher_script = '/home/clb02321/PycharmProjects/ptycho-tools-ui/scripts/ptypy_launcher'
         cluster_config = '/dls_sw/apps/ptychography_tools/cluster_configurations/%s.txt' % beamline
         dawn_job = DawnUI(config_file, output_directory, scan_number, beamline, launcher_script, cluster_config)
         dawn_job.create_log_file()
         dawn_job.launch_cluster_job()
+        just_changed = None
+        pc = None
         while True:
             dawn_job.read_log()
-            latest_ptyr = dawn_job.get_latest_ptyr_file()
-            if latest_ptyr is not None:
-                while True:
-                    try:
-                        latest_ptyr = dawn_job.get_latest_ptyr_file()
-                        print("Trying to update plot from %s" % latest_ptyr)
-                        update_plot_from_ptyr(latest_ptyr, border=90)
-                        print("Found file, updated")
-                        break
-                    except IOError:
-                        print("Couldn't read file. File system blah, sleeping for 5 seconds")
-                        time.sleep(5.) # make sure the file is closed
-                    except KeyError:
-                        print("Couldn't read dataset. File system blah, sleeping for 5 seconds")
-                        time.sleep(5.)
+            # latest_ptyr = dawn_job.get_latest_ptyr_file()
+            # if latest_ptyr is not None:
+            #     while True:
+            #         try:
+            #             print("Trying to update plot from %s" % latest_ptyr)
+            #             update_plot_from_ptyr(latest_ptyr, border=50)
+            #             print("Found file, updated")
+            #             break
+            #         except IOError:
+            #             print("Couldn't read file. File system blah, sleeping for 5 seconds")
+            #             time.sleep(5.) # make sure the file is closed
+            if dawn_job.interaction_ip:
+                if just_changed is None:
+                    from ptypy.utils import PlotClient, Param
+                    clip = Param()
+                    clip.port = dawn_job.interaction_port
+                    clip.address = dawn_job.interaction_ip
+                    pc = PlotClient(clip, in_thread=False)
+                    pc.start()
+                    dp = pc.get_data()
+                    just_changed =True
+                    update_plot_from_zmqdp(dp, border=80)
+                else:
+                    dp = pc.get_data()
+                    update_plot_from_zmqdp(dp, border=80)
 
-            if dawn_job.reconstruction_finished:
+            if pc is not None and pc.status == pc.STOPPED:
                 break
             time.sleep(3.)
     except KeyboardInterrupt, SystemExit:

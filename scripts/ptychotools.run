@@ -11,7 +11,7 @@ from ptypy.core import Ptycho
 from ptypy.utils.verbose import log
 from ptypy.utils import parallel
 from ptypy import utils as u
-
+import socket
 
 u.verbose.set_level(3)
 parser = argparse.ArgumentParser(description='Runs a ptychography from the command line.')
@@ -132,6 +132,21 @@ parameters.run = args.identifier[0] if isinstance(args.identifier, list) else ar
 if args.plotting:
     log(3, "Turning the plotting on.")
     parameters.io.autoplot = u.Param(active=True)
+    parameters.io.autoplot.threaded = False
+    parameters.io.autoplot.interval = 1
+    parameters.io.interaction = u.Param()
+    parameters.io.interaction.server = u.Param()
+    parameters.io.interaction.server.active = True
+    if parallel.master:
+        hn = {"hostname": socket.gethostbyname(socket.gethostname())}
+    else:
+        hn = None
+    hn = parallel.comm.bcast(hn, root=0)
+    port = 8985
+    parameters.io.interaction.server.address = "tcp://"+hn['hostname']
+    parameters.io.interaction.server.port = port
+    parameters.io.interaction.server.connections = 1
+    log(3, "Interaction is broadcast on host:%s:%s" % (hn['hostname'], port))
 else:
     log(3, "Turning the plotting off.")
     parameters.io.autoplot = u.Param(active=False)
