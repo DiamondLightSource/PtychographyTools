@@ -41,14 +41,14 @@ parser.add_argument("--output-file", "-o",
                     default=None,
                     type=str)
 
-parser.add_argument("--high-threshold", "-h",
+parser.add_argument("--high-threshold", "-u",
                     dest="high_thresh",
                     help="The maximum counts to be passes",
                     default=None,
                     type=float)
 
 parser.add_argument("--low-threshold", "-l",
-                    dest="low_threshold",
+                    dest="low_thresh",
                     help="The lowest count that passes.",
                     default=None,
                     type=float)
@@ -58,6 +58,13 @@ parser.add_argument("--sigma-exclusion", "-s",
                     help="The path to the output mask file",
                     default=None,
                     type=str)
+
+parser.add_argument("--mask-dead", "-g",
+                    dest="mask_dead",
+                    help="if this argument is greater than 0 will mask dead pixels",
+                    default=None,
+                    type=int)
+
 
 args = parser.parse_args()
 
@@ -121,7 +128,7 @@ if args.existing_mask_file is not None:
         raise ValueError("Existing mask shape: %s, is not the same as the required shape of %s" % (mask.shape, mask_shape))
 else:
     logging.debug('No existing mask given. Setting initial mask to ones of shape: %s' % str(mask_shape))
-    mask = np.zeros(mask_shape)
+    mask = np.ones(mask_shape)
 
 if args.output_file is None:
     output_file_missing_msg = "You need to set the output file, -o"
@@ -137,7 +144,7 @@ except IOError as output_mask_file_error:
 logging.debug('Creating the mask entry in the output file.')
 entry = output_file.create_group('entry')
 mask_group = entry.create_group('mask')
-mask_group.create_dataset('mask', shape=dset.shape[-2:])
+#mask_group.create_dataset('mask', shape=dset.shape[-2:])
 
 logging.debug("Generating the mask.")
 
@@ -146,15 +153,26 @@ high_thresh = args.high_thresh if args.high_thresh is not None else np.inf
 
 npts = np.prod(dset.shape[:-2])
 
-dset_to_iterate = np.reshape(dset, (npts,)+mask_shape)
+dset_to_iterate = np.reshape(dset, (npts,)+mask_shape).astype(np.float)
 
 for idx in range(npts):
     logging.debug("Iterating through data slice %s of %s" % (str(idx), str(npts)))
+    print "low thresh", low_thresh, "high_thresh", high_thresh
+    print np.max(dset_to_iterate[idx]), np.min(dset_to_iterate[idx])
     mask[dset_to_iterate[idx] < low_thresh] = 0
     mask[dset_to_iterate[idx] > high_thresh] = 0
 
 
+if args.mask_dead is not None:
+    ave = np.mean(dset_to_iterate, axis=0)
+    sig = np.std(dset_to_iterate, axis=0)
+    rat = sig/ave
+    mask[rat==0] = 0
+    mask[rat==np.inf] = 0
+    mask[np.isnan(rat)] = 0
+
 if args.sigma_exclusion is not None:
+    print("Doing the sigma exclusion")
     logging.debug("Calculating mean")
     ave = np.mean(dset_to_iterate, axis=0)
     logging.debug("Done")
@@ -167,4 +185,5 @@ if args.sigma_exclusion is not None:
         mask[dset_to_iterate[idx] > ave + args.sigma_exclusion * sig] = 0
 
 mask_group['mask'] = mask
+mask_group['rat'] = rat
 output_file.close()

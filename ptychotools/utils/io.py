@@ -2,10 +2,11 @@
 Contains useful io tools
 '''
 
+rmpr = None
+uw = None
 
 
-
-def convert_ptyr_to_mapping(file_path, border=25):
+def convert_ptyr_to_mapping(file_path, border=80):
     '''
     :param file_path: path the ptypy ptyr
     :param border: The pixel border to trim from the object reconstruction
@@ -69,7 +70,8 @@ def convert_ptyr_to_mapping(file_path, border=25):
         phase_data['SampleX'].attrs['units'] = 'm'
         phase_data['SampleY'] = y
         phase_data['SampleY'].attrs['units'] = 'm'
-        phase_data['data'] = np.angle(data)
+        phase = np.angle(data)
+        phase_data['data'] = phase
         fout2.close()
 
 

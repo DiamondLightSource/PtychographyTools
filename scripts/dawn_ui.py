@@ -65,6 +65,79 @@ def ortho(modes):
     amp /= amp.sum()
     return amp, nplist
 
+def rmphaseramp(a, weight=None, return_phaseramp=False):
+    """
+    Attempts to remove the phase ramp in a two-dimensional complex array
+    ``a``.
+
+    Parameters
+    ----------
+    a : ndarray
+        Input image as complex 2D-array.
+
+    weight : ndarray, str, optional
+        Pass weighting array or use ``'abs'`` for a modulus-weighted
+        phaseramp and ``Non`` for no weights.
+
+    return_phaseramp : bool, optional
+        Use True to get also the phaseramp array ``p``.
+
+    Returns
+    -------
+    out : ndarray
+        Modified 2D-array, ``out=a*p``
+    p : ndarray, optional
+        Phaseramp if ``return_phaseramp = True``, otherwise omitted
+
+    Examples
+    --------
+    >>> b = rmphaseramp(image)
+    >>> b, p = rmphaseramp(image , return_phaseramp=True)
+    """
+
+    useweight = True
+    if weight is None:
+        useweight = False
+    elif weight == 'abs':
+        weight = np.abs(a)
+
+    ph = np.exp(1j*np.angle(a))
+    [gx, gy] = np.gradient(ph)
+    gx = -np.real(1j*gx/ph)
+    gy = -np.real(1j*gy/ph)
+
+    if useweight:
+        nrm = weight.sum()
+        agx = (gx*weight).sum() / nrm
+        agy = (gy*weight).sum() / nrm
+    else:
+        agx = gx.mean()
+        agy = gy.mean()
+
+    (xx, yy) = np.indices(a.shape)
+    p = np.exp(-1j*(agx*xx + agy*yy))
+
+    if return_phaseramp:
+        return a*p, p
+    else:
+        return a*p
+
+def remove_ramp(unwrapped_phase):
+    def make_plane(xsc, xoff, ysc, yoff, const, shape):
+        Y, X = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]))
+        plane = (xsc * X - xoff) + (ysc * Y + yoff) + const
+        return plane
+
+    def resid(x, *args):
+        data = args[0]
+        pl = make_plane(*x, shape=data.shape)
+        return (data - pl).flatten()
+    x0 = np.ones((5,))
+    from scipy.optimize import leastsq
+    fit = leastsq(resid, x0, (unwrapped_phase,), full_output=True)
+    pl = make_plane(*fit[0], shape=unwrapped_phase.shape)
+    return unwrapped_phase - pl
+
 def update_plot_from_ptyr(fpath, border=50):
     f = h5.File(fpath, 'r')
     obj = f['/content/obj']
@@ -76,8 +149,13 @@ def update_plot_from_ptyr(fpath, border=50):
     object_y = object_y[border:-border]
     obj_data = obj['data'][0, border:-border, border:-border]
     # print len(object_x), obj_data.shape
+    phase_obj = np.angle(obj_data)
+    from skimage.restoration import unwrap_phase
+    print("unwrapping phase")
+    phase_obj = unwrap_phase(phase_obj)
+    phase_obj = remove_ramp(phase_obj)
     dnp.plot.image(np.abs(obj_data), {'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Modulus', resetaxes=True)
-    dnp.plot.image(np.angle(obj_data),{'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Phase', resetaxes=True)
+    dnp.plot.image(phase_obj,{'x/ mm':object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Phase', resetaxes=True)
     dnp.plot.image(obj_data, {'x/ mm': object_y/1e-3}, {'y/ mm': object_x/1e-3}, 'Object Complex', resetaxes=True)
 
     probe = f['/content/probe']
@@ -198,7 +276,7 @@ class DawnUI(object):
         self.current_log_line_number = idx
 
     def update_plots(self, ptyr_file):
-        update_plot_from_ptyr(ptyr_file, border=50)
+        update_plot_from_ptyr(ptyr_file, border=80)
 
     def get_latest_ptyr_file(self):
         # first check to see if the final one is there
@@ -213,15 +291,18 @@ class DawnUI(object):
             else:
                 latest_file = os.path.join(self.dumps_directory, files[-1])
 
-        if latest_file==self.latest_ptyr:
-            return None
-        else:
-            self.latest_ptyr = latest_file
-            return latest_file
+#        if latest_file==self.latest_ptyr:
+#            return None
+#        else:
+        self.latest_ptyr = latest_file
+        return latest_file
 
 
 if __name__ == '__main__':
     try:
+	from datetime import datetime
+        now = datetime.now()
+        timstmp = now.strftime("%Y%m%d_%H%M%S")
         logger = logging.getLogger()
 
         # Default level - should be changed as soon as possible
@@ -234,7 +315,7 @@ if __name__ == '__main__':
         beamline = os.environ['BEAMLINE']
         initialise_dawn_windows()
         config_file = os.path.join(processing_directory,  config_name_in_processing_directory)
-        output_directory = os.path.join(processing_directory, "ptychography")
+        output_directory = os.path.join(processing_directory, "ptypy_%s_%s" % (str(scan_number), timstmp))
         if not os.path.exists(output_directory):
             os.makedirs(output_directory, 0o777)
 
@@ -249,13 +330,18 @@ if __name__ == '__main__':
             if latest_ptyr is not None:
                 while True:
                     try:
+                        latest_ptyr = dawn_job.get_latest_ptyr_file()
                         print("Trying to update plot from %s" % latest_ptyr)
-                        update_plot_from_ptyr(latest_ptyr, border=50)
+                        update_plot_from_ptyr(latest_ptyr, border=90)
                         print("Found file, updated")
                         break
                     except IOError:
                         print("Couldn't read file. File system blah, sleeping for 5 seconds")
                         time.sleep(5.) # make sure the file is closed
+                    except KeyError:
+                        print("Couldn't read dataset. File system blah, sleeping for 5 seconds")
+                        time.sleep(5.)
+
             if dawn_job.reconstruction_finished:
                 break
             time.sleep(3.)
