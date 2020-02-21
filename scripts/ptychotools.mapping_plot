@@ -1,0 +1,38 @@
+#! /dls_sw/apps/python/anaconda/4.6.14/64/envs/zocalo-stable/bin/python
+
+
+import argparse
+
+parser = argparse.ArgumentParser(description='Plots a nexus file to the mapping perspective.')
+
+
+parser.add_argument("--plottable-file", "-i",
+                    dest="plottable_file",
+                    help="The path to the nexus file to plot.",
+                    type=str)
+
+parser.add_argument('--host', "-q",
+                    dest='host',
+                    help='Host name of the machine to plot to.',
+                    default='localhost',
+                    type=str)
+
+parser.add_argument('--port', "-p",
+                    dest='port',
+                    help='Port to plot to',
+                    default=61613,
+                    type=int)
+
+
+args = parser.parse_args()
+
+
+if __name__=='__main__':
+    import stomp
+
+    conn = stomp.Connection([(args.host, args.port)])
+    conn.auto_content_length = False
+    conn.start()
+    conn.connect()
+    conn.send(body='{"filePath" : "%s"}' % args.plottable_file, destination="/topic/org.dawnsci.file.topic",content_type="text/plain")
+    conn.disconnect()

@@ -176,7 +176,9 @@ def update_plot_from_zmqdp(dp, border=50):
 
     probe, obj, meta = dp
     if len(obj.keys())>0:
-        obj = obj[obj.keys()[0]]
+        scanname= obj.keys()[0]
+        print("I am updating the plot from scan: %s" % scanname)
+        obj = obj[scanname]
 
         try:
             obj_data = obj['data'][0, border:-border, border:-border]
@@ -215,10 +217,13 @@ def update_plot_from_zmqdp(dp, border=50):
             dnp.plot.image(np.abs(probe_data), {'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6}, 'Probe Modulus')#,{'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6}, 'Probe Modulus')
             dnp.plot.image(probe_data, {'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6},'Probe Complex')#,{'x/ micron':probe_y/1e-6}, {'y/ micron': probe_x/1e-6}, 'Probe Complex')
             # print("Data plotted")
-        except KeyError:
+        except KeyError as e:
             print("Server has no data to plot.")
+            print(e)
+            #raise
     else:
         print("Server has no data to plot")
+        print("There are no object keys")
 
 
 def initialise_dawn_windows():
@@ -291,7 +296,7 @@ class DawnUI(object):
                                 "-l", "gpu_arch=" + self._cluster_config["GPU_ARCH"],
                                 "-o", self.log_file,
                                 "-e", self.log_file,
-                                "/home/clb02321/PycharmProjects/ptycho-tools-ui/scripts/ptypy_mpi_recipe",
+                                "/dls_sw/apps/ptychography_tools/latest/scripts/ptypy_mpi_recipe",
                                 "-j", self.config_file,
                                 "-i", self.identifier,
                                 "-o", self.output_directory,
@@ -334,6 +339,7 @@ class DawnUI(object):
                     if not self.interaction_ip:
                         self.interaction_ip = "tcp://"+line.split(':')[1] if re.search("Interaction is broadcast on host:", line) else None
                         self.interaction_port = line.split(':')[2].strip('\n') if re.search("Interaction is broadcast on host:", line) else None
+                        # print("ip is:%s and port is: %s" % (self.interaction_ip, self.interaction_port))
         self.current_log_line_number = idx
 
     def update_plots(self, ptyr_file):
@@ -381,7 +387,7 @@ if __name__ == '__main__':
         if not os.path.exists(output_directory):
             os.makedirs(output_directory, 0o777)
 
-        launcher_script = '/home/clb02321/PycharmProjects/ptycho-tools-ui/scripts/ptypy_launcher'
+        launcher_script = '/dls_sw/apps/ptychography_tools/latest/scripts/ptypy_launcher'
         cluster_config = '/dls_sw/apps/ptychography_tools/cluster_configurations/%s.txt' % beamline
         dawn_job = DawnUI(config_file, output_directory, scan_number, beamline, launcher_script, cluster_config)
         dawn_job.create_log_file()
@@ -403,6 +409,7 @@ if __name__ == '__main__':
             #             time.sleep(5.) # make sure the file is closed
             if dawn_job.interaction_ip:
                 if just_changed is None:
+                    print("I am here")
                     from ptypy.utils import PlotClient, Param
                     clip = Param()
                     clip.port = dawn_job.interaction_port
@@ -413,12 +420,13 @@ if __name__ == '__main__':
                     just_changed =True
                     update_plot_from_zmqdp(dp, border=80)
                 else:
+                    print("I am in the else")
                     dp = pc.get_data()
                     update_plot_from_zmqdp(dp, border=80)
 
             if pc is not None and pc.status == pc.STOPPED:
                 break
-            time.sleep(3.)
+            time.sleep(5.)
     except KeyboardInterrupt, SystemExit:
         print("Keyboard interrupt! Killing cluster job....")
         dawn_job.kill_cluster_job()

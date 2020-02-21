@@ -43,8 +43,11 @@ FLATFIELD_PATH = '/dls_sw/i08/software/flatfield/flatfield_100iterations_700eV_%
 FLATFIELD_KEY = '/flat'
 logging.log(3, "I am in the flat and dark adder")
 
-
-f = h5.File(args.data_file, 'r+')
+try:
+    f = h5.File(args.data_file, 'r+')
+except:
+    logging.log(3, "Have had an issue opening the nexus file")
+    raise
 try:
     a_= f[DETECTOR_KEY + 'flatfield']
     print("found flatfield")

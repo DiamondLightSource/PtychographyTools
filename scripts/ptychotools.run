@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/dls_sw/apps/ptypy/temporary_environment_rhel7/miniconda/envs/full_dependencies/bin/python
 
 import argparse
 import json

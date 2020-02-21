@@ -29,8 +29,8 @@ def convert_ptyr_to_mapping(file_path, border=80):
         out_entry.attrs['NX_class'] = 'NXentry'
 
         x, y = obj['grids'][...]
-        x = x[0, :, 0]
-        y = y[0, 0, :]
+        x = x[0, :, 0] / 1e-3 # get them into mm
+        y = y[0, 0, :] / 1e-3 # get them into mm
         x = x[border:-border]
         y = y[border:-border]
         data = obj['data'][...].squeeze()
@@ -40,16 +40,16 @@ def convert_ptyr_to_mapping(file_path, border=80):
 
         abs_data = out_entry.create_group("mag_"+obj_name)
         abs_data.attrs['NX_class'] = 'NXdata'
-        abs_data.attrs['SampleX_indices'] = 0
-        abs_data.attrs['SampleY_indices'] = 1
-        abs_data.attrs['axes'] = ['SampleX', 'SampleY', '.', '.']
+        abs_data.attrs['SampleY_value_set_indices'] = np.int32(0)
+        abs_data.attrs['SampleX_value_set_indices'] = np.int32(1)
+        abs_data.attrs['axes'] = ['SampleY_value_set', 'SampleX_value_set', '.', '.']
         abs_data.attrs['signal'] = 'data'
-        abs_data['SampleX'] = x
-        abs_data['SampleX'].attrs['units'] = 'm'
-        abs_data['SampleY'] = y
-        abs_data['SampleY'].attrs['units'] = 'm'
+        abs_data['SampleY_value_set'] = x
+        abs_data['SampleY_value_set'].attrs['units'] = 'mm'
+        abs_data['SampleX_value_set'] = y
+        abs_data['SampleX_value_set'].attrs['units'] = 'mm'
 
-        abs_data['data'] = np.abs(data)
+        abs_data['data'] = np.float64(np.abs(data))
 
         fout1.close()
 
@@ -62,15 +62,15 @@ def convert_ptyr_to_mapping(file_path, border=80):
 
         phase_data = out_entry.create_group("phase_"+obj_name)
         phase_data.attrs['NX_class'] = 'NXdata'
-        phase_data.attrs['SampleX_indices'] = 0
-        phase_data.attrs['SampleY_indices'] = 1
-        phase_data.attrs['axes'] = ['SampleX', 'SampleY', '.', '.']
+        phase_data.attrs['SampleY_value_set_indices'] = np.int32(0)
+        phase_data.attrs['SampleX_value_set_indices'] = np.int32(1)
+        phase_data.attrs['axes'] = ['SampleY_value_set', 'SampleX_value_set', '.', '.']
         phase_data.attrs['signal'] = 'data'
-        phase_data['SampleX'] = x
-        phase_data['SampleX'].attrs['units'] = 'm'
-        phase_data['SampleY'] = y
-        phase_data['SampleY'].attrs['units'] = 'm'
-        phase = np.angle(data)
+        phase_data['SampleY_value_set'] = x
+        phase_data['SampleY_value_set'].attrs['units'] = 'mm'
+        phase_data['SampleX_value_set'] = y
+        phase_data['SampleX_value_set'].attrs['units'] = 'mm'
+        phase = np.float64(np.angle(data))
         phase_data['data'] = phase
         fout2.close()
 
@@ -83,14 +83,14 @@ def convert_ptyr_to_mapping(file_path, border=80):
 
         complex_data = out_entry.create_group("complex"+obj_name)
         complex_data.attrs['NX_class'] = 'NXdata'
-        complex_data.attrs['SampleX_indices'] = 0
-        complex_data.attrs['SampleY_indices'] = 1
-        complex_data.attrs['axes'] = ['SampleX', 'SampleY', '.', '.']
+        complex_data.attrs['SampleY_indices'] = 0
+        complex_data.attrs['SampleX_indices'] = 1
+        complex_data.attrs['axes'] = ['SampleY_value_set', 'SampleX_value_set', '.', '.']
         complex_data.attrs['signal'] = 'data'
-        complex_data['SampleX'] = x
-        complex_data['SampleX'].attrs['units'] = 'm'
-        complex_data['SampleY'] = y
-        complex_data['SampleY'].attrs['units'] = 'm'
+        complex_data['SampleY_value_set'] = x
+        complex_data['SampleY_value_set'].attrs['units'] = 'mm'
+        complex_data['SampleX_value_set'] = y
+        complex_data['SampleX_value_set'].attrs['units'] = 'mm'
         complex_data['data'] = data
         fout3.close()
     return {'complex': complex_path, 'phase': phase_path, 'magnitude': magnitudes_path}
