@@ -5,7 +5,7 @@ import datetime
 import logging
 import argparse
 
-logfile = '/dls/tmp/ptypy_logging/make_flatfield/i08_file_converter_%s.log' % datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+logfile = '/dls/tmp/ptypy_logging/slice_select_skip_%s.log' % datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
 logging.basicConfig(filename=logfile, level=logging.DEBUG)
 
