@@ -21,7 +21,7 @@ setup(
              'scripts/ptychotools.add_flat_dark',
              'scripts/ptychotools.mapping_plot',
              'scripts/ptychotools.propagate',
-             'scripts/ptychotools.ptypy_launcher'
+             'scripts/ptychotools.ptypy_launcher',
              'scripts/ptychotools.ptypy_mpi_recipe',
              'scripts/ptychotools.run',
              'scripts/ptychotools.slice_select_skip',
