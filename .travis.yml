@@ -18,7 +18,7 @@ install: True
 
 script:
   - conda env create --file ${TEST_ENV_NAME}.yml;
-  - source activate ${ptychotools)
+  - source activate ${ptychotools}
   - conda install pytest # additional dependencies for the tests
   - pip install pytest-cov
   - pip install coveralls
