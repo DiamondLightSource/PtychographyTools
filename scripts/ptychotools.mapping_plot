@@ -27,7 +27,7 @@ parser.add_argument('--port', "-p",
 args = parser.parse_args()
 
 
-if __name__=='__main__':
+if __name__== '__main__':
     import stomp
 
     conn = stomp.Connection([(args.host, args.port)])

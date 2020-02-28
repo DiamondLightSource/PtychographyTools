@@ -1,16 +1,14 @@
 #!/dls_sw/apps/ptypy/temporary_environment_rhel7/miniconda/envs/full_dependencies/bin/python
 
 import argparse
-import json
-import yaml
-import os
 
-from ptychotools.utils.io import convert_ptyr_to_mapping, get_output_folder_name
-from ptychotools.utils.ptypy_parameters import paramtree_from_json, paramtree_from_yaml, parse_param_data_paths_with_paramtree
-from ptypy.core import Ptycho
-from ptypy.utils.verbose import log
-from ptypy.utils import parallel
+from ptychotools.utils import io, log, parallel
+from ptychotools.utils import ptypy_params
+
 from ptypy import utils as u
+from ptypy.core import Ptycho
+
+
 import socket
 
 u.verbose.set_level(3)
@@ -57,9 +55,9 @@ args.identifier = args.identifer[0] if len(args.identifier)>1 else args.identifi
 
 def get_parameters(args):
     if args.config_file.endswith(('.yml', '.yaml')):
-        parameters_to_run = paramtree_from_yaml(args.config_file)
+        parameters_to_run = ptypy_params.paramtree_from_yaml(args.config_file)
     elif args.config_file.endswith(('.jsn', '.json')):
-        parameters_to_run = paramtree_from_json(args.config_file)
+        parameters_to_run = ptypy_params.paramtree_from_json(args.config_file)
     else:
         raise RuntimeError("I don't recognise the file extension.")
     return parameters_to_run
@@ -98,9 +96,9 @@ else:
     parameters.io.autoplot = u.Param(active=False)
 # make sure we aren't randomly writing somewhere if this isn't set.
 if args.output_folder is not None:
-    parameters.io.home = get_output_folder_name(args)
+    parameters.io.home = io.get_output_folder_name(args)
     run_name = parameters.run[0] if isinstance(parameters.run, list) else parameters.run
-    parameters.io.rfile = "%s/scan_%s.ptyr" % (get_output_folder_name(args), str(run_name))
+    parameters.io.rfile = "%s/scan_%s.ptyr" % (io.get_output_folder_name(args), str(run_name))
     parameters.io.autosave = u.Param(active=True, interval=100)
     log(3, "Autosave is on, with io going in {}, and the final reconstruction into {}".format(parameters.io.home,
                                                                                               parameters.io.rfile))
@@ -118,13 +116,13 @@ if args.share_probe:
         log(3, "RuntimeError:For linked scans we should only have one scan listed in the json file.")
         raise RuntimeError("For linked scans we should only have one scan listed in the json file.")
     master_scan = parameters.scans[parameters.scans.keys()[0]]
-    master_scan.data.dfile = "%s/scan_%s.ptyd" % (get_output_folder_name(args), str(run_name))
+    master_scan.data.dfile = "%s/scan_%s.ptyd" % (io.get_output_folder_name(args), str(run_name))
     del parameters.scans[parameters.scans.keys()[0]]  # delete it for now, we will add it back in with a different name
     for identifier in args.identifier:
         parameters.run = identifier
         parameters.scans[str(identifier)] = master_scan.copy(99)
         data_entry = parameters.scans[str(identifier)].data
-        data_entry.dfile = "%s/scan_%s.ptyd" % (get_output_folder_name(args), str(parameters.run))
+        data_entry.dfile = "%s/scan_%s.ptyd" % (io.get_output_folder_name(args), str(parameters.run))
         for sub_entry_key, sub_entry in data_entry.iteritems():
             if isinstance(sub_entry, dict):
                 for dict_entry_key, dict_entry in sub_entry.iteritems():
@@ -142,7 +140,7 @@ if args.share_probe:
             v.storage = master_storage
             v.storageID = master_storage.ID
         if sname is not master_storage.ID:
-            P.probe.storages.pop(sname) # delete it's originally created storage
+            P.probe.storages.pop(sname) # delete its originally created storage
     parallel.barrier()
     P.probe.reformat()  # deal with it!
     P.print_stats()
@@ -154,12 +152,12 @@ if args.share_probe:
     P.finalize()
 else:
     # have to get the identifier into scan.data somehow.
-    parse_param_data_paths_with_paramtree(parameters, args)
+    ptypy_params.parse_param_data_paths_with_paramtree(parameters, args)
     P = Ptycho(parameters, level=args.ptypy_level)
 
 # now output the mapping compatible files
 if parallel.master:
     log(3, "Converting to nexus files...")
-    convert_ptyr_to_mapping(parameters.io.rfile, border=25)
+    io.convert_ptyr_to_mapping(parameters.io.rfile, border=25)
     log(3, "Done.")
 
