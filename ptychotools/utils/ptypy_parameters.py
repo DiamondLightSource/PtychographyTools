@@ -8,6 +8,7 @@ from ptypy.core import Ptycho
 import logging
 import json
 import yaml
+from .io import get_output_folder_name
 
 
 def _byteify(data, ignore_dicts = False):
@@ -61,6 +62,7 @@ def paramtree_to_yaml(paramtree, basefile, filepath):
     with open(filepath, 'w') as f:
         f.write(to_write_yaml)
 
+
 def paramtree_from_yaml(yaml_file):
     '''
     generates a ptypy param tree from a json file
@@ -77,7 +79,6 @@ def paramtree_from_yaml(yaml_file):
     if in_dict['parameter_tree'] is not None:
         parameters_to_run.update(in_dict['parameter_tree'], Convert=True)
     return parameters_to_run
-
 
 
 def paramtree_from_json(json_file):
@@ -97,7 +98,8 @@ def paramtree_from_json(json_file):
         parameters_to_run.update(in_dict['parameter_tree'], Convert=True)
     return parameters_to_run
 
-def parse_param_data_paths_with_paramtree(paramtree):
+
+def parse_param_data_paths_with_paramtree(paramtree, args):
     '''
     This does a string replacement in any str paths in the .data subtree using
     items like .run in the top level tree.
@@ -106,6 +108,8 @@ def parse_param_data_paths_with_paramtree(paramtree):
     '''
     for scan_key, scan in paramtree.scans.iteritems():
         data_entry = scan.data
+        run_name = paramtree.run[0] if isinstance(paramtree.run, list) else paramtree.run
+        scan.data.dfile = "%s/scan_%s.ptyd" % (get_output_folder_name(args), str(run_name))
         for sub_entry_key, sub_entry in data_entry.iteritems():
             if isinstance(sub_entry, dict):
                 for dict_entry_key, dict_entry in sub_entry.iteritems():

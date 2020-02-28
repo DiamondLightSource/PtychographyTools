@@ -4,9 +4,9 @@ import argparse
 import json
 import yaml
 import os
-from datetime import datetime
 
-from ptychotools.utils.io import convert_ptyr_to_mapping
+from ptychotools.utils.io import convert_ptyr_to_mapping, get_output_folder_name
+from ptychotools.utils.ptypy_parameters import paramtree_from_json, paramtree_from_yaml, parse_param_data_paths_with_paramtree
 from ptypy.core import Ptycho
 from ptypy.utils.verbose import log
 from ptypy.utils import parallel
@@ -52,71 +52,17 @@ parser.add_argument('--plot', '-P',
 
 args = parser.parse_args()
 
-
-if len(args.identifier)<2:
-    args.identifier = args.identifier[0]
-
-
-def _byteify(data, ignore_dicts=False):
-    # if this is a unicode string, return its string representation
-    if isinstance(data, unicode):
-        return data.encode('utf-8')
-    # if this is a list of values, return list of byteified values
-    if isinstance(data, list):
-        return [ _byteify(item, ignore_dicts=True) for item in data ]
-    # if this is a dictionary, return dictionary of byteified keys and values
-    # but only if we haven't already byteified it
-    if isinstance(data, dict) and not ignore_dicts:
-        return {
-            _byteify(key, ignore_dicts=True): _byteify(value, ignore_dicts=True)
-            for key, value in data.iteritems()
-        }
-    # if it's anything else, return it in its original form
-    return data
+args.identifier = args.identifer[0] if len(args.identifier)>1 else args.identifier
 
 
 def get_parameters(args):
     if args.config_file.endswith(('.yml', '.yaml')):
-        in_dict = yaml.load(open(args.config_file), Loader=yaml.FullLoader)
+        parameters_to_run = paramtree_from_yaml(args.config_file)
     elif args.config_file.endswith(('.jsn', '.json')):
-        in_dict = json.load(open(args.config_file), object_hook=_byteify)
+        parameters_to_run = paramtree_from_json(args.config_file)
     else:
         raise RuntimeError("I don't recognise the file extension.")
-    parameters_to_run = u.Param()
-    if in_dict['base_file'] is not None:
-        log(3, "Basing this scan off of the scan in {}".format(in_dict['base_file']))
-        previous_scan = Ptycho.load_run(in_dict['base_file'], False)  # load in the run but without the data
-        previous_parameters = previous_scan.p
-        parameters_to_run.update(previous_parameters)
-    if in_dict['parameter_tree'] is not None:
-        parameters_to_run.update(in_dict['parameter_tree'], Convert=True)
     return parameters_to_run
-
-
-def get_folder_name(args):
-    from datetime import datetime
-    now = datetime.now()
-    id = args.identifier[0] if isinstance(args.identifier, list) else args.identifier
-    if args.identifier is not None:
-        output_path = os.path.join(args.output_folder, "scan_{}".format(id))
-    else:
-        output_path = os.path.join(args.output_folder, "scan_{}".format(now.strftime("%Y%m%d%H%M%S")))
-    log(3, "Output is going in: {}".format(output_path))
-    return output_path
-
-
-def parse_data_paths_with_parameters(parameters, args):
-    for scan_key, scan in parameters.scans.iteritems():
-        data_entry = scan.data
-        run_name = parameters.run[0] if isinstance(parameters.run, list) else parameters.run
-        scan.data.dfile = "%s/scan_%s.ptyd" % (get_folder_name(args), str(run_name))
-        for sub_entry_key, sub_entry in data_entry.iteritems():
-            if isinstance(sub_entry, dict):
-                for dict_entry_key, dict_entry in sub_entry.iteritems():
-                    if isinstance(dict_entry, str):
-                        sub_entry[dict_entry_key] = dict_entry % parameters
-            elif isinstance(sub_entry, str):
-                data_entry[sub_entry_key] = sub_entry % parameters
 
 
 if isinstance(args.identifier, list) and not args.share_probe:
@@ -152,9 +98,9 @@ else:
     parameters.io.autoplot = u.Param(active=False)
 # make sure we aren't randomly writing somewhere if this isn't set.
 if args.output_folder is not None:
-    parameters.io.home = get_folder_name(args)
+    parameters.io.home = get_output_folder_name(args)
     run_name = parameters.run[0] if isinstance(parameters.run, list) else parameters.run
-    parameters.io.rfile = "%s/scan_%s.ptyr" % (get_folder_name(args), str(run_name))
+    parameters.io.rfile = "%s/scan_%s.ptyr" % (get_output_folder_name(args), str(run_name))
     parameters.io.autosave = u.Param(active=True, interval=100)
     log(3, "Autosave is on, with io going in {}, and the final reconstruction into {}".format(parameters.io.home,
                                                                                               parameters.io.rfile))
@@ -172,13 +118,13 @@ if args.share_probe:
         log(3, "RuntimeError:For linked scans we should only have one scan listed in the json file.")
         raise RuntimeError("For linked scans we should only have one scan listed in the json file.")
     master_scan = parameters.scans[parameters.scans.keys()[0]]
-    master_scan.data.dfile = "%s/scan_%s.ptyd" % (get_folder_name(args), str(run_name))
+    master_scan.data.dfile = "%s/scan_%s.ptyd" % (get_output_folder_name(args), str(run_name))
     del parameters.scans[parameters.scans.keys()[0]]  # delete it for now, we will add it back in with a different name
     for identifier in args.identifier:
         parameters.run = identifier
         parameters.scans[str(identifier)] = master_scan.copy(99)
         data_entry = parameters.scans[str(identifier)].data
-        data_entry.dfile = "%s/scan_%s.ptyd" % (get_folder_name(args), str(parameters.run))
+        data_entry.dfile = "%s/scan_%s.ptyd" % (get_output_folder_name(args), str(parameters.run))
         for sub_entry_key, sub_entry in data_entry.iteritems():
             if isinstance(sub_entry, dict):
                 for dict_entry_key, dict_entry in sub_entry.iteritems():
@@ -208,7 +154,7 @@ if args.share_probe:
     P.finalize()
 else:
     # have to get the identifier into scan.data somehow.
-    parse_data_paths_with_parameters(parameters, args)
+    parse_param_data_paths_with_paramtree(parameters, args)
     P = Ptycho(parameters, level=args.ptypy_level)
 
 # now output the mapping compatible files

@@ -6,6 +6,18 @@ rmpr = None
 uw = None
 
 
+def get_output_folder_name(args):
+    from datetime import datetime
+    now = datetime.now()
+    id = args.identifier[0] if isinstance(args.identifier, list) else args.identifier
+    if args.identifier is not None:
+        output_path = os.path.join(args.output_folder, "scan_{}".format(id))
+    else:
+        output_path = os.path.join(args.output_folder, "scan_{}".format(now.strftime("%Y%m%d%H%M%S")))
+    log(3, "Output is going in: {}".format(output_path))
+    return output_path
+
+
 def convert_ptyr_to_mapping(file_path, border=80):
     '''
     :param file_path: path the ptypy ptyr
