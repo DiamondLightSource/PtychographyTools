@@ -25,7 +25,7 @@ script:
   - echo $PYTHONPATH
   - conda list
   - python setup.py install # test that the package buikds
-  - py.test test -v --cov ptypy --cov-report term-missing # now run the tests
+  - py.test test -v --cov ptychotools --cov-report term-missing # now run the tests
 
 after_script:
   - coveralls
