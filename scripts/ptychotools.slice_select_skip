@@ -1,5 +1,4 @@
-#! /dls_sw/apps/ptypy/temporary_environment/miniconda/envs/full_dependencies/bin/python
-
+#!/usr/bin/env python
 import h5py as h5
 import datetime
 import logging

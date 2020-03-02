@@ -1,5 +1,4 @@
-#!/dls_sw/apps/ptypy/temporary_environment/miniconda/envs/full_dependencies/bin/python
-
+#!/usr/bin/env python
 import argparse
 import numpy as np
 import h5py as h5
