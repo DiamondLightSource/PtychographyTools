@@ -5,4 +5,8 @@ dependencies:
   - python=2.7
   - numpy
   - h5py
-
+  - pep8
+  - pip
+  - pip:
+    - pytest-cov
+    - coveralls
