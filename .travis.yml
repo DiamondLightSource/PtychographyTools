@@ -18,14 +18,14 @@ install: True
 
 script:
   - conda env create --file ${TEST_ENV_NAME}.yml;
-  - source activate ${ptychotools}
+  - source activate ptychotools
   - conda install pytest # additional dependencies for the tests
   - pip install pytest-cov
   - pip install coveralls
   - echo $PYTHONPATH
   - conda list
   - python setup.py install # test that the package buikds
-  - py.test test -v #--cov ptychotools --cov-report term-missing # now run the tests
+  - py.test test -v --cov test --cov-report term-missing # now run the tests
 
 after_script:
   - coveralls
