@@ -11,7 +11,7 @@ import yaml
 from .io import get_output_folder_name
 
 
-def _byteify(data, ignore_dicts = False):
+def _byteify(data, ignore_dicts=False):
     # if this is a unicode string, return its string representation
     if isinstance(data, unicode):
         return data.encode('utf-8')
@@ -108,8 +108,7 @@ def parse_param_data_paths_with_paramtree(paramtree, args):
     '''
     for scan_key, scan in paramtree.scans.iteritems():
         data_entry = scan.data
-        run_name = paramtree.run[0] if isinstance(paramtree.run, list) else paramtree.run
-        scan.data.dfile = "%s/scan_%s.ptyd" % (get_output_folder_name(args), str(run_name))
+        scan.data.dfile = "%s/scan_%s.ptyd" % (get_output_folder_name(args), str(paramtree.run))
         for sub_entry_key, sub_entry in data_entry.iteritems():
             if isinstance(sub_entry, dict):
                 for dict_entry_key, dict_entry in sub_entry.iteritems():

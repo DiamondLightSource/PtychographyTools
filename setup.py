@@ -17,6 +17,7 @@ setup(
     description='Wrappers for the ptypy framework',
     package_dir={'ptychotools': 'ptychotools'},
     packages=package_list,
+    package_data={'test' : ['resource/*']},
     scripts=['scripts/ptychotools.propagate',
              'scripts/ptychotools.add_flat_dark',
              'scripts/ptychotools.mapping_plot',

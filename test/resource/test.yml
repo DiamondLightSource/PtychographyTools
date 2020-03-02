@@ -1,0 +1,22 @@
+base_file: null
+parameter_tree:
+  engines:
+    engine00:
+      name: DM
+      numiter: 80
+  io:
+    autosave:
+      active: false
+    home: /tmp/ptypy/
+  scans:
+    MF:
+      data:
+        density: 0.2
+        name: MoonFlowerScan
+        num_frames: 200
+        photons: 100000000.0
+        psf: 0.0
+        save: null
+        shape: 128
+      name: BlockVanilla
+  verbose_level: 3
