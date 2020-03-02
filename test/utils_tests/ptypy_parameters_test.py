@@ -4,6 +4,7 @@ testing for the ptypy_parameters module
 
 
 import unittest
+import pytest
 import os
 import tempfile
 import shutil
@@ -19,6 +20,7 @@ class PtypyParametersTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.output_directory)
 
+    @pytest.mark.ptypy
     def test_paramtree_to_json(self):
         p = tu.generate_test_param_tree()
         output_json_path = os.path.join(self.output_directory, 'test.json')
@@ -28,6 +30,7 @@ class PtypyParametersTest(unittest.TestCase):
         self.assertEqual(expected_result, actual_result, msg="There was a problem converting the paramtree to json."
                                                              "\n expected_result: %s \n\n actual_result: %s \n\n" % (repr(expected_result), repr(actual_result)))
 
+    @pytest.mark.ptypy
     def test_paramtree_to_yaml(self):
         p = tu.generate_test_param_tree()
         output_yaml_path = os.path.join(self.output_directory, 'test.yml')
@@ -37,12 +40,14 @@ class PtypyParametersTest(unittest.TestCase):
         self.assertEqual(expected_result, actual_result, msg="There was a problem converting the paramtree to yaml."
                                                              "\n expected_result: %s \n\n actual_result: %s \n\n" % (repr(expected_result), repr(actual_result)))
 
+    @pytest.mark.ptypy
     def test_paramtree_from_json(self):
         expected_paramtree = tu.generate_test_param_tree()
         real_paramtree = paramtree_from_json(tu.test_json_path())
         self.assertEqual(expected_paramtree, real_paramtree, msg="There was a problem converting the json to paramtree."
                                                                  "\n expected_result: %s \n\n actual_result: %s \n\n" % (repr(expected_paramtree), repr(real_paramtree)))
 
+    @pytest.mark.ptypy
     def test_paramtree_from_yaml(self):
         expected_paramtree = tu.generate_test_param_tree()
         real_paramtree = paramtree_from_yaml(tu.test_yaml_path())
@@ -50,6 +55,7 @@ class PtypyParametersTest(unittest.TestCase):
                                                                  "\n expected_result: %s \n\n actual_result: %s \n\n" % (
                                                                      repr(expected_paramtree), repr(real_paramtree)))
 
+    @pytest.mark.ptypy
     def test_parse_param_data_paths_with_paramtree(self):
         dfile_preset_answer = 'cheesecake'
         paramtree = tu.generate_test_param_tree()

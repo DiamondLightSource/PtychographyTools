@@ -4,7 +4,7 @@
 
 import os
 
-from ptypy import utils as u
+
 
 
 def test_json_path():
@@ -19,6 +19,7 @@ def generate_test_param_tree():
     '''
     essential minimal prep and run. Contains enough variety to test things
     '''
+    from ptypy import utils as u
     paramtree = u.Param()
 
     # for verbose output
