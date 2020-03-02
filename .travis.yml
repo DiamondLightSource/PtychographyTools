@@ -13,7 +13,7 @@ before_install:
   - conda info -a # and print the info
 
 env:
-  - TEST_ENV_NAME=dependencies
+  - TEST_ENV_NAME=test_dependencies
 install: True
 
 script:
@@ -25,7 +25,7 @@ script:
   - echo $PYTHONPATH
   - conda list
   - python setup.py install # test that the package buikds
-  - py.test test -v --cov test --cov-report term-missing # now run the tests
+  - py.test test -v -m "not ptypy" --cov test --cov-report term-missing # now run the tests
 
 after_script:
   - coveralls
