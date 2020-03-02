@@ -3,14 +3,17 @@
 '''
 
 import os
+
 from ptypy import utils as u
 
 
 def test_json_path():
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource/test.json")
 
+
 def test_yaml_path():
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource/test.yml")
+
 
 def generate_test_param_tree():
     '''
