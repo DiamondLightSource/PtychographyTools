@@ -1,0 +1,64 @@
+base_file: null
+parameter_tree:
+  data_type: single
+  dry_run: false
+  engines:
+    engine_00:
+      alpha: 1
+      fourier_relax_factor: 0.01
+      name: DM
+      numiter: 5
+      numiter_contiguous: 1
+      object_inertia: 0.001
+      overlap_converge_factor: 0.001
+      overlap_max_iterations: 20
+      position_refinement:
+        amplitude: 1.0e-07
+        interval: 2
+        max_shift: 3.0e-07
+        nshifts: 4
+        start: 1551
+        stop: 90
+      probe_inertia: 0.001
+      probe_support: 1
+      probe_update_start: 2
+      update_object_first: false
+  io:
+    autoplot:
+      active: true
+      imfile: plots/%(run)s/%(run)s_%(engine)s_%(iterations)04d_0.056DMGpu.png
+    autosave:
+      active: false
+      interval: 5
+      rfile: dumps/%(run)s/%(run)s_%(engine)s_%(iterations)04d_0.056DMGpu.ptyr
+    home: /dls/i08-1/data/2020/cm26499-1/processing/
+    rfile: recons/%(run)s/%(run)s_%(engine)s_%(iterations)04d_0.056DMGpu.ptyr
+  ipython_kernel: false
+  run: '26237'
+  scans:
+    MF:
+      coherence:
+        num_object_modes: 1
+        num_probe_modes: 1
+      data:
+        add_poisson_noise: false
+        auto_center: true
+        dfile: null
+        distance: 7.0
+        energy: 6.2
+        intensities:
+          file: /home/clb02321/PycharmProjects/PtychographyToolsPrivate/test/resource/%(run)s.h5
+          key: data
+        name: Hdf5Loader
+        orientation: 0
+        positions:
+          fast_key: y
+          fast_multiplier: 1.0
+          file: /home/clb02321/PycharmProjects/PtychographyToolsPrivate/test/resource/%(run)s.h5
+          slow_key: x
+          slow_multiplier: 1.0
+        psize: 1.72e-04
+        save: append
+      name: Full
+      propagation: farfield
+  verbose_level: 3

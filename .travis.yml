@@ -24,8 +24,8 @@ script:
   - pip install coveralls
   - echo $PYTHONPATH
   - conda list
-  - python setup.py install # test that the package buikds
-  - py.test test -v -m "not ptypy" --cov test --cov-report term-missing # now run the tests
+  - python setup.py build # test that the package buikds
+  - py.test build/lib/test -v -m "not ptypy" --cov test --cov-report term-missing # now run the tests
 
 after_script:
   - coveralls

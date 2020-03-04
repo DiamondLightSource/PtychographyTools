@@ -5,14 +5,20 @@
 import os
 
 
-
-
-def test_json_path():
+def get_json_path():
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource/test.json")
 
 
-def test_yaml_path():
+def get_yaml_path():
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource/test.yml")
+
+
+def get_moonflower_info():
+    info = {}
+    info['config'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource/minimal_prep_and_run.yml")
+    info['scan1'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource/scan1.h5")
+    info['scan2'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource/scan2.h5")
+    return info
 
 
 def generate_test_param_tree():
@@ -55,3 +61,4 @@ def generate_test_param_tree():
     paramtree.engines.engine00.name = 'DM'
     paramtree.engines.engine00.numiter = 80
     return paramtree
+
