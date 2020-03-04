@@ -15,7 +15,7 @@ usage() {
 }
 
 PROPAGATE=false
-EXTRA_ARGS="-P 1"
+EXTRA_ARGS="-P 0`"
 
 while getopts "hqs:z:j:i:o:v:n:p:" opt; do
   case $opt in
