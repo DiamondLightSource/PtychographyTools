@@ -2,7 +2,7 @@
 import argparse
 
 from ptychotools.utils import io, log, parallel
-from ptychotools.utils import ptypy_params
+from ptychotools.utils import ptypy_parameters as ptypy_params
 
 from ptypy import utils as u
 from ptypy.core import Ptycho
@@ -44,12 +44,12 @@ parser.add_argument('--share-probe', '-S',
 parser.add_argument('--plot', '-P',
                     dest="plotting",
                     help="A switch for the plotting. 1: on, 0:off",
-                    default=1,
+                    default=0,
                     type=int)
 
 args = parser.parse_args()
 
-args.identifier = args.identifer[0] if len(args.identifier)>1 else args.identifier
+args.identifier = args.identifier[0] if len(args.identifier)<2 else args.identifier
 
 
 def get_parameters(args):
