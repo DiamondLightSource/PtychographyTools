@@ -5,6 +5,7 @@ dependencies:
   - python=2.7
   - numpy
   - h5py
+  - procrunner
   - pep8
   - pip
   - pip:
