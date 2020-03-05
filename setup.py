@@ -27,6 +27,7 @@ setup(
              'scripts/ptychotools.run',
              'scripts/ptychotools.slice_select_skip',
              'scripts/ptychotools.update_mask_file',
-             'scripts/ptychotools.write_dawn_processing_bean']
+             'scripts/ptychotools.write_dawn_processing_bean',
+             'scripts/ptychotools.utils']
 )
 

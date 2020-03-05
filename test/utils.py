@@ -21,6 +21,10 @@ def get_moonflower_info():
     return info
 
 
+def get_ptyr_path():
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource/scan_scan1.ptyr")
+
+
 def generate_test_param_tree():
     '''
     essential minimal prep and run. Contains enough variety to test things

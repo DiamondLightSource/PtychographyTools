@@ -31,9 +31,9 @@ class RunTest(unittest.TestCase):
         build_path = os.path.dirname(os.path.abspath(__file__)).split('lib')[0]
         self.ptychotools_run = os.path.join(build_path, "scripts-2.7/ptychotools.run") # need to find this automatically
         self.resources = tu.get_moonflower_info()
-
-    def tearDown(self):
-        shutil.rmtree(self.working_directory)
+    #
+    # def tearDown(self):
+    #     shutil.rmtree(self.working_directory)
 
     def test_single_identifier(self):
 
@@ -46,6 +46,7 @@ class RunTest(unittest.TestCase):
 
         print(command)
         out = procrunner.run(["/bin/bash"], stdin=command, working_directory=self.working_directory)
+        self.assertEqual(out['exitcode'], 0)
 
         expected_number_of_objects = 1
         expected_number_of_probes = 1
@@ -63,6 +64,7 @@ class RunTest(unittest.TestCase):
 
         print(command)
         out = procrunner.run(["/bin/bash"], stdin=command, working_directory=self.working_directory)
+        self.assertEqual(out['exitcode'], 0)
 
         # should fail and print runtime error to stderr
         self.assertTrue("raise RuntimeError(\'If you pass a list of arguments you must share the probe between them. Set -S option.\')" in out["stderr"])

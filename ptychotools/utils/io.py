@@ -6,9 +6,22 @@ import os
 from . import log
 import numpy as np
 import h5py as h5
+import argparse
 
 rmpr = None  # ramp removal
 uw = None  # unwrapping
+
+
+
+def two_floats(value):
+    '''
+    Since '-' is reserved for option parsing, we have to do this to get around it.
+    '''
+    values = value.split()
+    if len(values) != 2:
+        raise argparse.ArgumentError
+    values = map(float, values)
+    return values
 
 
 def get_output_folder_name(args):
@@ -77,4 +90,113 @@ def convert_ptyr_to_mapping(file_path, border=80):
 
     return {'complex': complex_paths, 'phase': phase_paths, 'magnitude': magnitudes_paths}
 
+
+def write_propagated_output(output_filename, propagated_projections, probe_x, probe_y, probe, zaxis, obj_x, obj_y, obj):
+    with h5.File(output_filename, 'w') as fout:
+        fout.create_group('entry')
+        fout.attrs['NX_class'] = 'NXentry'
+        # the focus propagation
+        propagated = fout['entry'].create_group('propagated')
+
+        # need to add reconstructed probe and object into this.
+        fout['entry/propagated/x/data'] = probe_x
+        fout['entry/propagated/y/data'] = probe_y
+        fout['entry/propagated/z/data'] = zaxis
+        chunks = (50, 50, 50)
+
+        abs_probe = propagated.create_group('abs_probe')
+        abs_probe.attrs["NX_class"] = 'NXdata'
+        abs_probe.create_dataset('data', data=np.abs(propagated_projections), chunks=chunks)
+        abs_probe.attrs['axes'] = ["z", "y", "x"]
+        abs_probe['x'] = fout['entry/propagated/x/data'][...]
+        abs_probe['y'] = fout['entry/propagated/y/data'][...]
+        abs_probe['z'] = fout['entry/propagated/z/data'][...]
+        abs_probe.attrs['x_indices'] = 2
+        abs_probe.attrs['y_indices'] = 1
+        abs_probe.attrs['z_indices'] = 0
+        abs_probe.attrs['signal'] = 'data'
+
+        phase_probe = propagated.create_group('phase_probe')
+        phase_probe.attrs["NX_class"] = 'NXdata'
+        phase_probe.create_dataset('data', data=np.angle(propagated_projections), chunks=chunks)
+        phase_probe.attrs['axes'] = ["z", "y", "x"]
+        phase_probe['x'] = fout['entry/propagated/x/data'][...]
+        phase_probe['y'] = fout['entry/propagated/y/data'][...]
+        phase_probe['z'] = fout['entry/propagated/z/data'][...]
+        phase_probe.attrs['x_indices'] = 2
+        phase_probe.attrs['y_indices'] = 1
+        phase_probe.attrs['z_indices'] = 0
+        phase_probe.attrs['signal'] = 'data'
+
+        complex_probe = propagated.create_group('complex_probe')
+        complex_probe.attrs["NX_class"] = 'NXdata'
+        complex_probe.create_dataset('data', data=propagated_projections, chunks=chunks)
+        complex_probe.attrs['axes'] = ["z", "y", "x"]
+        complex_probe['x'] = fout['entry/propagated/x/data'][...]
+        complex_probe['y'] = fout['entry/propagated/y/data'][...]
+        complex_probe['z'] = fout['entry/propagated/z/data'][...]
+        complex_probe.attrs['x_indices'] = 2
+        complex_probe.attrs['y_indices'] = 1
+        complex_probe.attrs['z_indices'] = 0
+        complex_probe.attrs['signal'] = 'data'
+
+        # now the 2D reconstructions
+        reconstructed = fout['entry'].create_group('reconstructed')
+        reconstructed.create_group('obj_x')
+        reconstructed.create_group('obj_y')
+        reconstructed['obj_x'].create_dataset('data', data=obj_x)
+        reconstructed['obj_y'].create_dataset('data', data=obj_y)
+
+        fout['entry/reconstructed/x/data'] = fout['entry/propagated/x/data'][...]
+        fout['entry/reconstructed/y/data'] = fout['entry/propagated/y/data'][...]
+
+        reconstructed_abs_probe = reconstructed.create_group('abs_probe')
+        reconstructed_abs_probe.attrs["NX_class"] = 'NXdata'
+        reconstructed_abs_probe.create_dataset('data', data=np.abs(probe))
+        reconstructed_abs_probe['x'] = fout['entry/reconstructed/x/data'][...]
+        reconstructed_abs_probe['y'] = fout['entry/reconstructed/y/data'][...]
+        reconstructed_abs_probe.attrs['axes'] = ["y", "x"]
+        reconstructed_abs_probe.attrs['x_indices'] = 1
+        reconstructed_abs_probe.attrs['y_indices'] = 0
+        reconstructed_abs_probe.attrs['signal'] = 'data'
+
+        reconstructed_phase_probe = reconstructed.create_group('angle_probe')
+        reconstructed_phase_probe.attrs["NX_class"] = 'NXdata'
+        reconstructed_phase_probe.create_dataset('data', data=np.angle(probe))
+        reconstructed_phase_probe['x'] = fout['entry/reconstructed/x/data'][...]
+        reconstructed_phase_probe['y'] = fout['entry/reconstructed/y/data'][...]
+        reconstructed_phase_probe.attrs['axes'] = ["y", "x"]
+        reconstructed_phase_probe.attrs['x_indices'] = 1
+        reconstructed_phase_probe.attrs['y_indices'] = 0
+        reconstructed_phase_probe.attrs['signal'] = 'data'
+
+        reconstructed_abs_obj = reconstructed.create_group('abs_obj')
+        reconstructed_abs_obj.attrs["NX_class"] = 'NXdata'
+        reconstructed_abs_obj.create_dataset('data', data=np.abs(obj))
+        reconstructed_abs_obj['obj_x'] = fout['entry/reconstructed/obj_x/data'][...]
+        reconstructed_abs_obj['obj_y'] = fout['entry/reconstructed/obj_y/data'][...]
+        reconstructed_abs_obj.attrs['axes'] = ["obj_x", "obj_y"]
+        reconstructed_abs_obj.attrs['obj_x_indices'] = 0
+        reconstructed_abs_obj.attrs['obj_y_indices'] = 1
+        reconstructed_abs_obj.attrs['signal'] = 'data'
+
+        reconstructed_phase_obj = reconstructed.create_group('phase_obj')
+        reconstructed_phase_obj.attrs["NX_class"] = 'NXdata'
+        reconstructed_phase_obj.create_dataset('data', data=np.angle(obj))
+        reconstructed_phase_obj['obj_x'] = fout['entry/reconstructed/obj_x/data'][...]
+        reconstructed_phase_obj['obj_y'] = fout['entry/reconstructed/obj_y/data'][...]
+        reconstructed_phase_obj.attrs['axes'] = ["obj_x", "obj_y"]
+        reconstructed_phase_obj.attrs['obj_x_indices'] = 0
+        reconstructed_phase_obj.attrs['obj_y_indices'] = 1
+        reconstructed_phase_obj.attrs['signal'] = 'data'
+
+        reconstructed_complex_obj = reconstructed.create_group('complex_obj')
+        reconstructed_complex_obj.attrs["NX_class"] = 'NXdata'
+        reconstructed_complex_obj.create_dataset('data', data=obj)
+        reconstructed_complex_obj['complex_obj_x'] = fout['entry/reconstructed/obj_x/data'][...]
+        reconstructed_complex_obj['complex_obj_y'] = fout['entry/reconstructed/obj_y/data'][...]
+        reconstructed_complex_obj.attrs['axes'] = ["complex_obj_x", "complex_obj_y"]
+        reconstructed_complex_obj.attrs['complex_obj_x_indices'] = 0
+        reconstructed_complex_obj.attrs['complex_obj_y_indices'] = 1
+        reconstructed_complex_obj.attrs['signal'] = 'data'
 

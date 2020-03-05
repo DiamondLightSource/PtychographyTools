@@ -2,9 +2,9 @@
 
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )" # this is the path to this launcher script
 
-echo $SCRIPT_PATH/utils
+echo $SCRIPT_PATH/ptychotools.utils
 
-source $SCRIPT_PATH/utils
+source $SCRIPT_PATH/ptychotools.utils
 
 usage() {
       echo "Usage:"
@@ -94,15 +94,15 @@ fi
 if [ "$CLUSTER_QUEUE" = "HAMILTON" ];
 then
     echo "Using Hamilton"
-    module load hamilton
+    module load hamilton-quiet
 #    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH"
     MEMORY_REQUEST=9G # for Hamilton we hardcode 9G per slot
-    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE"
+    qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE"
 
 else
     module load global/cluster-quiet
     MEMORY_REQUEST=12G  # for com14 we hardcode 12GB per slot
-    qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE"
+    qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE"
 fi
 
 echo "The log files are:"
@@ -118,11 +118,11 @@ then
     touch $LOG_FILE
     chmod +rw $LOG_FILE
     log "The log file is set to: $LOG_FILE" $LOG_FILE
-    echo "$1 (linked submission) --> $LOG_FILE"
+
     if $PROPAGATE;
     then
         log "I'll propagate the result" $LOG_FILE
-        qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -q -j $JSON_FILE -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE -i "$IDENTIFIER_LIST">> $LOG_FILE
+        jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -q -j $JSON_FILE -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE -i "$IDENTIFIER_LIST"`
 
 
     else
@@ -138,16 +138,17 @@ then
         log "identifier list:$IDENTIFIER_LIST" $LOG_FILE
         IDENTIFIER=`echo ${IDENTIFIER_LIST}`
         log "identifier is:$IDENTIFIER" $LOG_FILE
-        qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i "$IDENTIFIER" -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -q >> $LOG_FILE
-    fi
+        jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i "$IDENTIFIER" -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -q`
 
+    fi
+    echo "$1 (linked submission) --> $LOG_FILE / jobid:${jid}"
 
 else
     for IDENTIFIER in $IDENTIFIER_LIST; do
         LOG_FILE="$LOG_DIRECTORY/scan_${IDENTIFIER}_$(date +'%Y%m%d_%H%M%S').log"
         touch $LOG_FILE
         chmod +rw $LOG_FILE
-        echo "$IDENTIFIER --> $LOG_FILE"
+
         log "I am here:" $LOG_FILE
         log "The log file is set to: $LOG_FILE" $LOG_FILE
         log "The cluster config file is set to: $CLUSTER_CONFIG_FILE" $LOG_FILE
@@ -157,13 +158,13 @@ else
         if $PROPAGATE;
         then
             log "I'll propagate the result" $LOG_FILE
-            qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE >> $LOG_FILE
+            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE`
 
 
         else
             log "Not propagating the results" $LOG_FILE
-            qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE >> $LOG_FILE
+            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYPY_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE`
         fi
-
+        echo "$IDENTIFIER --> $LOG_FILE / jobid:${jid}"
     done
 fi
