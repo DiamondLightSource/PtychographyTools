@@ -6,7 +6,6 @@ import os
 from . import log
 import numpy as np
 import h5py as h5
-import argparse
 
 rmpr = None  # ramp removal
 uw = None  # unwrapping
