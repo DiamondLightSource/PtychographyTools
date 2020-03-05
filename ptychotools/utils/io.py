@@ -12,18 +12,6 @@ rmpr = None  # ramp removal
 uw = None  # unwrapping
 
 
-
-def two_floats(value):
-    '''
-    Since '-' is reserved for option parsing, we have to do this to get around it.
-    '''
-    values = value.split()
-    if len(values) != 2:
-        raise argparse.ArgumentError
-    values = map(float, values)
-    return values
-
-
 def get_output_folder_name(args):
     from datetime import datetime
     now = datetime.now()
@@ -34,6 +22,17 @@ def get_output_folder_name(args):
         output_path = os.path.join(args.output_folder, "scan_{}".format(now.strftime("%Y%m%d%H%M%S")))
     log(3, "Output is going in: {}".format(output_path))
     return output_path
+
+
+def two_floats(value):
+    '''
+    Since '-' is reserved for option parsing, we have to do this to get around it.
+    '''
+    values = value.split()
+    if len(values) != 2:
+        raise ValueError("Value:%s has the wrong length. Should not be longer than 2" % str(values))
+    values = map(float, values)
+    return values
 
 
 def write_dataset_to_file(data, file_path,  obj_name, x, y, tag, dtype=np.float64):
@@ -50,7 +49,7 @@ def write_dataset_to_file(data, file_path,  obj_name, x, y, tag, dtype=np.float6
         dataset['SampleY_value_set'].attrs['units'] = 'mm'
         dataset['SampleX_value_set'] = y
         dataset['SampleX_value_set'].attrs['units'] = 'mm'
-        dataset['data'] = dtype(data)
+        dataset['data'] = data.astype(dtype)
 
 
 def convert_ptyr_to_mapping(file_path, border=80):
@@ -199,4 +198,3 @@ def write_propagated_output(output_filename, propagated_projections, probe_x, pr
         reconstructed_complex_obj.attrs['complex_obj_x_indices'] = 0
         reconstructed_complex_obj.attrs['complex_obj_y_indices'] = 1
         reconstructed_complex_obj.attrs['signal'] = 'data'
-

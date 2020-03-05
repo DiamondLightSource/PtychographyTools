@@ -8,8 +8,9 @@ import pytest
 import os
 import tempfile
 import shutil
-
+import numpy as np
 from test import utils as tu
+
 
 @pytest.mark.ptypy
 class PtypyParametersTest(unittest.TestCase):
@@ -73,6 +74,25 @@ class PtypyParametersTest(unittest.TestCase):
                                                                                     "\n dfile=%s" % paramtree.scans.MF.data.dfile)
         self.assertTrue(paramtree.run in paramtree.scans.MF.data.something, msg="the data tree has not been parsed with the .run value"
                                                                                 "\n paramtree.scans.MF.data.something=%s" % paramtree.scans.MF.data.something)
+
+    def test_byteify(self):
+        import ptychotools.utils.ptypy_parameters as pp
+
+        inputs = {'unicode_string': u'\u03B8 cheese \u03BA',
+                  'list_of_unicode': [u'\u03B8 cheese \u03BA', u'\u03B9 cake \u03BB']
+                  }
+        expected_outputs = {'unicode_string' : '\xce\xb8 cheese \xce\xba',
+                            'list_of_unicode': ['\xce\xb8 cheese \xce\xba', '\xce\xb9 cake \xce\xbb']
+                            }
+
+        # first lets test the basic inputs
+        for key, val in inputs.iteritems():
+            print(key)
+            np.testing.assert_equal(expected_outputs[key], pp.byteify(val), err_msg="Could not convert %s" % key)
+
+        # now a dictionary
+        output_dict = pp.byteify(inputs)
+        self.assertDictEqual(output_dict, expected_outputs)
 
 
 if __name__ == '__main__':

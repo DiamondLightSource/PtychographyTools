@@ -11,18 +11,18 @@ import yaml
 from .io import get_output_folder_name
 
 
-def _byteify(data, ignore_dicts=False):
+def byteify(data, ignore_dicts=False):
     # if this is a unicode string, return its string representation
     if isinstance(data, unicode):
         return data.encode('utf-8')
     # if this is a list of values, return list of byteified values
     if isinstance(data, list):
-        return [ _byteify(item, ignore_dicts=True) for item in data ]
+        return [byteify(item, ignore_dicts=True) for item in data]
     # if this is a dictionary, return dictionary of byteified keys and values
     # but only if we haven't already byteified it
     if isinstance(data, dict) and not ignore_dicts:
         return {
-            _byteify(key, ignore_dicts=True): _byteify(value, ignore_dicts=True)
+            byteify(key, ignore_dicts=True): byteify(value, ignore_dicts=True)
             for key, value in data.iteritems()
         }
     # if it's anything else, return it in its original form
@@ -87,7 +87,7 @@ def paramtree_from_json(json_file):
     :param json_file: the path the json file
     :return: a Param based structure.
     '''
-    in_dict = json.load(open(json_file), object_hook=_byteify)
+    in_dict = json.load(open(json_file), object_hook=byteify)
     parameters_to_run = u.Param()
     if in_dict['base_file'] is not None:
         logging.debug("Basing this scan off of the scan in {}".format(in_dict['base_file']))

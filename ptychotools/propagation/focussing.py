@@ -42,7 +42,7 @@ def propagate_probe(probe, psize, energy, distance, zrange, NPTS=1024):
     g.propagation = "nearfield"
 
     for idx, z in enumerate(zaxis):
-        if (z==0.0):
+        if (z == 0.0):
             propagated_projections[idx] = probe
         else:
             g.distance = z
