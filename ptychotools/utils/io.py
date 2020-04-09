@@ -30,7 +30,7 @@ def two_floats(value):
     values = value.split()
     if len(values) != 2:
         raise ValueError("Value:%s has the wrong length. Should not be longer than 2" % str(values))
-    values = map(float, values)
+    values = list(map(float, values))
     return values
 
 
@@ -63,7 +63,7 @@ def convert_ptyr_to_mapping(file_path, border=80):
     complex_paths = []
     phase_paths = []
     magnitudes_paths = []
-    for obj_name, obj in fread[obj_keys].iteritems():
+    for obj_name, obj in fread[obj_keys].items():
         x, y = obj['grids'][...]
         x = x[0, :, 0] / 1e-3  # get them into mm
         y = y[0, 0, :] / 1e-3  # get them into mm

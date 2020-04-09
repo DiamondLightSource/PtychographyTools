@@ -10,23 +10,27 @@ import json
 import yaml
 from .io import get_output_folder_name
 
-
-def byteify(data, ignore_dicts=False):
-    # if this is a unicode string, return its string representation
-    if isinstance(data, unicode):
-        return data.encode('utf-8')
-    # if this is a list of values, return list of byteified values
-    if isinstance(data, list):
-        return [byteify(item, ignore_dicts=True) for item in data]
-    # if this is a dictionary, return dictionary of byteified keys and values
-    # but only if we haven't already byteified it
-    if isinstance(data, dict) and not ignore_dicts:
-        return {
-            byteify(key, ignore_dicts=True): byteify(value, ignore_dicts=True)
-            for key, value in data.iteritems()
-        }
-    # if it's anything else, return it in its original form
-    return data
+# not needed in python 3
+# def byteify(data, ignore_dicts=False):
+#     '''
+#     converts all strings to utf8 encoding, including dictionary keys
+#     '''
+#     raise DeprecationWarning('This function is deprecated ')
+#     # if this is a unicode string, return its string representation
+#     if isinstance(data, str):
+#         return data.encode('utf-8')
+#     # if this is a list of values, return list of byteified values
+#     if isinstance(data, list):
+#         return [byteify(item, ignore_dicts=True) for item in data]
+#     # if this is a dictionary, return dictionary of byteified keys and values
+#     # but only if we haven't already byteified it
+#     if isinstance(data, dict) and not ignore_dicts:
+#         return {
+#             byteify(key, ignore_dicts=True): byteify(value, ignore_dicts=True)
+#             for key, value in data.items()
+#         }
+#     # if it's anything else, return it in its original form
+#     return data
 
 
 def paramtree_to_json(paramtree, basefile, filepath):
@@ -87,7 +91,7 @@ def paramtree_from_json(json_file):
     :param json_file: the path the json file
     :return: a Param based structure.
     '''
-    in_dict = json.load(open(json_file), object_hook=byteify)
+    in_dict = json.load(open(json_file))#, object_hook=byteify)
     parameters_to_run = u.Param()
     if in_dict['base_file'] is not None:
         logging.debug("Basing this scan off of the scan in {}".format(in_dict['base_file']))
@@ -106,12 +110,12 @@ def parse_param_data_paths_with_paramtree(paramtree, args):
     :param json_file: the path the json file
     :return: a Param based structure.
     '''
-    for scan_key, scan in paramtree.scans.iteritems():
+    for scan_key, scan in paramtree.scans.items():
         data_entry = scan.data
         scan.data.dfile = "%s/scan_%s.ptyd" % (get_output_folder_name(args), str(paramtree.run))
-        for sub_entry_key, sub_entry in data_entry.iteritems():
+        for sub_entry_key, sub_entry in data_entry.items():
             if isinstance(sub_entry, dict):
-                for dict_entry_key, dict_entry in sub_entry.iteritems():
+                for dict_entry_key, dict_entry in sub_entry.items():
                     if isinstance(dict_entry, str):
                         sub_entry[dict_entry_key] = dict_entry % paramtree
             elif isinstance(sub_entry, str):

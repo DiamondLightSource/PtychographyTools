@@ -19,6 +19,7 @@ parameter_tree:
         nshifts: 4
         start: 1551
         stop: 90
+        metric: fourier
       probe_inertia: 0.001
       probe_support: 1
       probe_update_start: 2

@@ -114,17 +114,17 @@ if args.share_probe:
     if len(parameters.scans.keys())>1:
         log(3, "RuntimeError:For linked scans we should only have one scan listed in the json file.")
         raise RuntimeError("For linked scans we should only have one scan listed in the json file.")
-    master_scan = parameters.scans[parameters.scans.keys()[0]]
+    master_scan = parameters.scans[list(parameters.scans.keys())[0]]
     master_scan.data.dfile = "%s/scan_%s.ptyd" % (io.get_output_folder_name(args), str(run_name))
-    del parameters.scans[parameters.scans.keys()[0]]  # delete it for now, we will add it back in with a different name
+    del parameters.scans[list(parameters.scans.keys())[0]]  # delete it for now, we will add it back in with a different name
     for identifier in args.identifier:
         parameters.run = identifier
         parameters.scans[str(identifier)] = master_scan.copy(99)
         data_entry = parameters.scans[str(identifier)].data
         data_entry.dfile = "%s/scan_%s.ptyd" % (io.get_output_folder_name(args), str(parameters.run))
-        for sub_entry_key, sub_entry in data_entry.iteritems():
+        for sub_entry_key, sub_entry in data_entry.items():
             if isinstance(sub_entry, dict):
-                for dict_entry_key, dict_entry in sub_entry.iteritems():
+                for dict_entry_key, dict_entry in sub_entry.items():
                     if isinstance(dict_entry, str):
                         sub_entry[dict_entry_key] = dict_entry % parameters
             elif isinstance(sub_entry, str):
@@ -132,9 +132,9 @@ if args.share_probe:
 
     # now run to level 3 to get the containers sorted
     P = Ptycho(parameters, level=3)
-    probe_storages = P.probe.storages.values()
+    probe_storages = list(P.probe.storages.values())
     master_storage = probe_storages[0]
-    for sname, storage in P.probe.storages.iteritems():
+    for sname, storage in P.probe.storages.items():
         for v in storage.views:
             v.storage = master_storage
             v.storageID = master_storage.ID

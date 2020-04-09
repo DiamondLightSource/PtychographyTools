@@ -43,7 +43,7 @@ parameters = P.p
 probe_storages = P.probe.storages
 obj_storages = P.obj.storages
 
-first_scan_name_probe = probe_storages.keys()[0]
+first_scan_name_probe = list(probe_storages.keys())[0]
 first_storage_probe = probe_storages[first_scan_name_probe]
 logger.debug('Selecting the first eigenmode of the probe...')
 weights, probes = ortho(first_storage_probe.data)
@@ -53,7 +53,7 @@ probe_x = np.array(first_storage_probe.grids[0])[0, :, 0]
 probe_y = np.array(first_storage_probe.grids[1])[0, 0, :]
 
 
-first_scan_name_obj = obj_storages.keys()[0]
+first_scan_name_obj = list(obj_storages.keys())[0]
 first_storage_obj = obj_storages[first_scan_name_obj]
 obj = first_storage_obj.data[0]
 obj_x = np.array(first_storage_obj.grids[0])[0, :, 0]

@@ -24,11 +24,11 @@ class PtypyLauncherTest(unittest.TestCase):
     def setUp(self):
         self.working_directory = tempfile.mkdtemp(prefix='run_test')
         build_path = os.path.dirname(os.path.abspath(__file__)).split('lib')[0]
-        self.launcher_script = os.path.join(build_path, "scripts-2.7/ptychotools.ptypy_launcher")
+        self.launcher_script = os.path.join(build_path, "scripts-3.7/ptychotools.ptypy_launcher")
         self.resources = tu.get_moonflower_info()
 
-    def tearDown(self):
-        shutil.rmtree(self.working_directory)
+    # def tearDown(self):
+    #     shutil.rmtree(self.working_directory)
 
     def test_single_node(self):
         param_dict = {'ptypy_version': 'ptychotools_local',
@@ -51,18 +51,18 @@ class PtypyLauncherTest(unittest.TestCase):
         command = "%(run_scripts)s -c %(cluster_config)s -j %(config)s -o %(working_directory)s -i %(identifier)s \n" % inputs
 
         print(command)
-        out = procrunner.run(["/bin/bash"], stdin=command, working_directory=self.working_directory)
+        out = procrunner.run(["/bin/bash"], stdin=command.encode('utf-8'), working_directory=self.working_directory)
 
         self.assertEqual(out['exitcode'], 0)
         # magic to extract the job id from the stdout
-        job_id = [ix for ix in out['stdout'].split('\n') if 'jobid' in ix][0].split('jobid:')[-1]
+        job_id = [ix for ix in out['stdout'].split(b'\n') if b'jobid' in ix][0].split(b'jobid:')[-1]
         print(job_id)
 
 
         out_dict = grab_qacct(self.working_directory, job_id, sleeptime=10, ntries=10)
 
-        self.assertEqual(out_dict['failed'], '0', msg="The job failed, with qacct.failed !=0. Was: %s" % out_dict['failed'])
-        self.assertEqual(out_dict['exit_status'], '0', msg="The exit status was !=0. Was %s" % out_dict['exit_status'])
+        self.assertEqual(out_dict[b'failed'], b'0', msg="The job failed, with qacct.failed !=0. Was: %s" % out_dict[b'failed'])
+        self.assertEqual(out_dict[b'exit_status'], b'0', msg="The exit status was !=0. Was %s" % out_dict[b'exit_status'])
 
     def test_multinode(self):
         param_dict = {'ptypy_version': 'ptychotools_local',
@@ -85,18 +85,18 @@ class PtypyLauncherTest(unittest.TestCase):
         command = "%(run_scripts)s -c %(cluster_config)s -j %(config)s -o %(working_directory)s -i %(identifier)s \n" % inputs
 
         print(command)
-        out = procrunner.run(["/bin/bash"], stdin=command, working_directory=self.working_directory)
+        out = procrunner.run(["/bin/bash"], stdin=command.encode('utf-8'), working_directory=self.working_directory)
         self.assertEqual(out['exitcode'], 0)
         # magic to extract the job id from the stdout
-        job_id = [ix for ix in out['stdout'].split('\n') if 'jobid' in ix][0].split('jobid:')[-1]
+        job_id = [ix for ix in out['stdout'].split(b'\n') if b'jobid' in ix][0].split(b'jobid:')[-1]
 
         print(job_id)
 
         # print("Waiting for job id %s" % job_id)
         out_dict = grab_qacct(self.working_directory, job_id, sleeptime=10, ntries=10)
 
-        self.assertEqual(out_dict['failed'], '0', msg="The job failed, with qacct.failed !=0. Was: %s" % out_dict['failed'])
-        self.assertEqual(out_dict['exit_status'], '0', msg="The exit status was !=0. Was %s" % out_dict['exit_status'])
+        self.assertEqual(out_dict[b'failed'], b'0', msg="The job failed, with qacct.failed !=0. Was: %s" % out_dict[b'failed'])
+        self.assertEqual(out_dict[b'exit_status'], b'0', msg="The exit status was !=0. Was %s" % out_dict[b'exit_status'])
 
 
     def test_batch_submission(self):
@@ -126,18 +126,20 @@ class PtypyLauncherTest(unittest.TestCase):
         command = "%(run_scripts)s -c %(cluster_config)s -j %(config)s -o %(working_directory)s -i %(identifier)s \n" % inputs
 
         print(command)
-        out = procrunner.run(["/bin/bash"], stdin=command, working_directory=self.working_directory)
+        out = procrunner.run(["/bin/bash"], stdin=command.encode('utf-8'), working_directory=self.working_directory)
 
         self.assertEqual(out['exitcode'], 0)
         # magic to extract the job id from the stdout
-        lines_with_job_ids_in = [ix for ix in out['stdout'].split('\n') if 'jobid' in ix]
-        job_ids = [ix.split('jobid:')[-1] for ix in lines_with_job_ids_in]
+
+
+        lines_with_job_ids_in = [ix for ix in out['stdout'].split(b'\n') if b'jobid' in ix]
+        job_ids = [ix.split(b'jobid:')[-1] for ix in lines_with_job_ids_in]
         print(job_ids)
 
         for job_id in job_ids:
             out_dict = grab_qacct(self.working_directory, job_id, sleeptime=10, ntries=10)
-            self.assertEqual(out_dict['failed'], '0', msg="The job failed, with qacct.failed !=0. Was: %s" % out_dict['failed'])
-            self.assertEqual(out_dict['exit_status'], '0', msg="The exit status was !=0. Was %s" % out_dict['exit_status'])
+            self.assertEqual(out_dict[b'failed'], b'0', msg="The job failed, with qacct.failed !=0. Was: %s" % out_dict[b'failed'])
+            self.assertEqual(out_dict[b'exit_status'], b'0', msg="The exit status was !=0. Was %s" % out_dict[b'exit_status'])
 
     def test_linked_submission(self):
         param_dict = {'ptypy_version': 'ptychotools_local',
@@ -168,19 +170,20 @@ class PtypyLauncherTest(unittest.TestCase):
         command = "%(run_scripts)s -c %(cluster_config)s -j %(config)s -o %(working_directory)s -i %(identifier)s -l \n" % inputs
 
         print(command)
-        out = procrunner.run(["/bin/bash"], stdin=command, working_directory=self.working_directory)
+        out = procrunner.run(["/bin/bash"], stdin=command.encode('utf-8'), working_directory=self.working_directory)
 
         self.assertEqual(out['exitcode'], 0)
         # magic to extract the job id from the stdout
-        lines_with_job_ids_in = [ix for ix in out['stdout'].split('\n') if 'jobid' in ix]
-        job_ids = [ix.split('jobid:')[-1] for ix in lines_with_job_ids_in]
+        lines_with_job_ids_in = [ix for ix in out['stdout'].split(b'\n') if b'jobid' in ix]
+        job_ids = [ix.split(b'jobid:')[-1] for ix in lines_with_job_ids_in]
+        print(job_ids)
         njobs = len(job_ids)
         self.assertEqual(njobs, 1, msg="More than one job was submitted. Linking probably isn't failing.%s jobs submitted." % njobs)
         print(job_ids)
         # should only be one job
         out_dict = grab_qacct(self.working_directory, job_ids[0], sleeptime=10, ntries=10)
-        self.assertEqual(out_dict['failed'], '0', msg="The job failed, with qacct.failed !=0. Was: %s" % out_dict['failed'])
-        self.assertEqual(out_dict['exit_status'], '0', msg="The exit status was !=0. Was %s" % out_dict['exit_status'])
+        self.assertEqual(out_dict[b'failed'], b'0', msg="The job failed, with qacct.failed !=0. Was: %s" % out_dict[b'failed'])
+        self.assertEqual(out_dict[b'exit_status'], b'0', msg="The exit status was !=0. Was %s" % out_dict[b'exit_status'])
 
 
 
@@ -200,15 +203,15 @@ def write_cluster_config_file(fpath, parameters_dict):
 
 def grab_qacct(working_directory, job_id, sleeptime, ntries=1):
 
-    qacct_params = " ".join(["qacct", "-j", job_id])
+    qacct_params = " ".join(["qacct", "-j", job_id.decode('utf-8')])
     k = 0
     arrived = False
+    command = "\n".join([". /etc/profile.d/modules.sh", "module load hamilton-quiet", qacct_params])
+
     while (not arrived) and (k < ntries):
         # try this
         out = procrunner.run(["/bin/bash"],
-                             stdin="\n".join([". /etc/profile.d/modules.sh",
-                                              "module load hamilton-quiet",
-                                              qacct_params]),
+                             stdin=command.encode('utf-8'),
                              working_directory=working_directory)
 
         if not out['stdout']:
@@ -219,7 +222,7 @@ def grab_qacct(working_directory, job_id, sleeptime, ntries=1):
             continue
         else:
             # dump to a file for further inspection
-            arrived = out['stdout'].split('\n')
+            arrived = out['stdout'].split(b'\n')
 
     # now parse the outputs
     outputs = {}
@@ -228,9 +231,9 @@ def grab_qacct(working_directory, job_id, sleeptime, ntries=1):
     # print(type(arrived))
     for line in arrived:
         if len(line) > 0:
-            if line[0] == "#":
+            if line[0] == b"#":
                 continue
-            a = line.strip().split(" ")
+            a = line.strip().split(b" ")
             key = a[0]
             val = a[-1]
             outputs[key] = val

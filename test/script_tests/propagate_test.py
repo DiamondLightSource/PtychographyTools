@@ -22,7 +22,7 @@ class PropagateTest(unittest.TestCase):
     def setUp(self):
         self.working_directory = tempfile.mkdtemp(prefix='run_test')
         build_path = os.path.dirname(os.path.abspath(__file__)).split('lib')[0]
-        self.propagate = os.path.join(build_path, "scripts-2.7/ptychotools.propagate")
+        self.propagate = os.path.join(build_path, "scripts-3.7/ptychotools.propagate")
         print("working directory: %s" % self.working_directory)
 
     def tearDown(self):
@@ -38,7 +38,7 @@ class PropagateTest(unittest.TestCase):
         command = "%(run_scripts)s -i %(input_file)s -o %(output_folder)s -z %(zrange)s \n" % inputs
 
         print(command)
-        out = procrunner.run(["/bin/bash"], stdin=command, working_directory=self.working_directory)
+        out = procrunner.run(["/bin/bash"], stdin=command.encode('utf-8'), working_directory=self.working_directory)
         self.assertEqual(out['exitcode'], 0)
         inputs['minz'], inputs['maxz'] = two_floats(inputs['zrange'].strip("\""))
 

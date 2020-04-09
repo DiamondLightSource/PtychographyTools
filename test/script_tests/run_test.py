@@ -24,12 +24,12 @@ import pytest
 # These tests will assume that ptypy works as expected, we are just checking the arguments are passed correctly.
 # We won't check anything about image quality, or even mostly that the file content is correct, just that they exist.
 
-@pytest.mark.ptypy
+# @pytest.mark.ptypy
 class RunTest(unittest.TestCase):
     def setUp(self):
         self.working_directory = tempfile.mkdtemp(prefix='run_test')
         build_path = os.path.dirname(os.path.abspath(__file__)).split('lib')[0]
-        self.ptychotools_run = os.path.join(build_path, "scripts-2.7/ptychotools.run") # need to find this automatically
+        self.ptychotools_run = os.path.join(build_path, "scripts-3.7/ptychotools.run") # need to find this automatically
         self.resources = tu.get_moonflower_info()
     #
     # def tearDown(self):
@@ -45,7 +45,7 @@ class RunTest(unittest.TestCase):
         command = "%(run_scripts)s %(config)s -O %(working_directory)s -I %(identifier)s \n" % inputs
 
         print(command)
-        out = procrunner.run(["/bin/bash"], stdin=command, working_directory=self.working_directory)
+        out = procrunner.run(["/bin/bash"], stdin=command.encode('utf-8'), working_directory=self.working_directory)
         self.assertEqual(out['exitcode'], 0)
 
         expected_number_of_objects = 1
@@ -63,11 +63,11 @@ class RunTest(unittest.TestCase):
         command = "%(run_scripts)s %(config)s -O %(working_directory)s -I %(identifier)s \n" % inputs
 
         print(command)
-        out = procrunner.run(["/bin/bash"], stdin=command, working_directory=self.working_directory)
-        self.assertEqual(out['exitcode'], 0)
+        out = procrunner.run(["/bin/bash"], stdin=command.encode('utf-8'), working_directory=self.working_directory)
+        self.assertEqual(out['exitcode'], 1)
 
         # should fail and print runtime error to stderr
-        self.assertTrue("raise RuntimeError(\'If you pass a list of arguments you must share the probe between them. Set -S option.\')" in out["stderr"])
+        self.assertTrue(b"raise RuntimeError(\'If you pass a list of arguments you must share the probe between them. Set -S option.\')" in out["stderr"])
 
     def test_two_identifiers_with_linking(self):
 
@@ -81,7 +81,7 @@ class RunTest(unittest.TestCase):
         command = "%(run_scripts)s %(config)s -O %(working_directory)s -I %(identifier)s -S \n" % inputs
 
         print(command)
-        out = procrunner.run(["/bin/bash"], stdin=command, working_directory=self.working_directory)
+        out = procrunner.run(["/bin/bash"], stdin=command.encode('utf-8'), working_directory=self.working_directory)
 
         #did it run ok?
         self.assertEqual(out['exitcode'], 0, msg="The run command returned a non zero exit code: %s" % str(out))
