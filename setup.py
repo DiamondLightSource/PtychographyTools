@@ -7,7 +7,6 @@ import setuptools
 
 
 package_list = setuptools.find_packages(exclude=['*scripts*'])
-print(package_list)
 
 
 setup(
