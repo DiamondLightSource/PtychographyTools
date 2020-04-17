@@ -73,7 +73,7 @@ then
     exit 1
 else
     source $CLUSTER_CONFIG_FILE; # this populates a bunch of parameters, so that's why they suddenly appear! Should document these.
-    mkdir -p $LOG_DIRECTORY
+    mkdir -p -m777 $LOG_DIRECTORY
 fi
 
 if [ -z ${JSON_FILE+x} ];
