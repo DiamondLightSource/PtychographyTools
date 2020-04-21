@@ -125,7 +125,7 @@ out_dict = {"name": args.name,
             "monitorForOverwrite": args.monitor_for_overwrite,
             "timeOut": args.timeout,
             "linkParentEntry": args.link_parent_entry,
-            "scanRank": 2}
+            "scanRank": args.scan_rank}
 print("Populated out dictionary.")
 
 print("Opening file to write bean to in: %s" % args.bean_path)
