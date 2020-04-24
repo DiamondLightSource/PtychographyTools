@@ -40,14 +40,14 @@ def write_dataset_to_file(data, file_path,  obj_name, x, y, tag, dtype=np.float6
         out_entry.attrs['NX_class'] = 'NXentry'
         dataset = out_entry.create_group(tag + obj_name)
         dataset.attrs['NX_class'] = 'NXdata'
-        dataset.attrs['SampleY_value_set_indices'] = np.int32(0)
-        dataset.attrs['SampleX_value_set_indices'] = np.int32(1)
-        dataset.attrs['axes'] = ['SampleY_value_set', 'SampleX_value_set', '.', '.']
+        dataset.attrs['SampleY_value_indices'] = np.int32(0)
+        dataset.attrs['SampleX_value_indices'] = np.int32(1)
+        dataset.attrs['axes'] = ['SampleY_value', 'SampleX_value', '.', '.']
         dataset.attrs['signal'] = 'data'
-        dataset['SampleY_value_set'] = x
-        dataset['SampleY_value_set'].attrs['units'] = 'mm'
-        dataset['SampleX_value_set'] = y
-        dataset['SampleX_value_set'].attrs['units'] = 'mm'
+        dataset['SampleY_value'] = x
+        dataset['SampleY_value'].attrs['units'] = 'mm'
+        dataset['SampleX_value'] = y
+        dataset['SampleX_value'].attrs['units'] = 'mm'
         dataset['data'] = data.astype(dtype)
 
 
