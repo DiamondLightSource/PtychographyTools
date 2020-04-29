@@ -31,7 +31,7 @@ class PtypyLauncherTest(unittest.TestCase):
     #     shutil.rmtree(self.working_directory)
 
     def test_single_node(self):
-        param_dict = {'ptypy_version': 'ptychotools_local',
+        param_dict = {'ptypy_version': 'ptycho-tools/dlsSD12020',
                       'cluster_queue': 'HAMILTON',
                       'total_num_processors': 40,
                       'num_gpus_per_node': 4,
@@ -65,7 +65,7 @@ class PtypyLauncherTest(unittest.TestCase):
         self.assertEqual(out_dict[b'exit_status'], b'0', msg="The exit status was !=0. Was %s" % out_dict[b'exit_status'])
 
     def test_multinode(self):
-        param_dict = {'ptypy_version': 'ptychotools_local',
+        param_dict = {'ptypy_version': 'ptycho-tools/dlsSD12020',
                       'cluster_queue': 'HAMILTON',
                       'total_num_processors': 80,
                       'num_gpus_per_node': 4,
@@ -100,7 +100,7 @@ class PtypyLauncherTest(unittest.TestCase):
 
 
     def test_batch_submission(self):
-        param_dict = {'ptypy_version': 'ptychotools_local',
+        param_dict = {'ptypy_version': 'ptycho-tools/dlsSD12020',
                       'cluster_queue': 'HAMILTON',
                       'total_num_processors': 40,
                       'num_gpus_per_node': 4,
@@ -142,7 +142,7 @@ class PtypyLauncherTest(unittest.TestCase):
             self.assertEqual(out_dict[b'exit_status'], b'0', msg="The exit status was !=0. Was %s" % out_dict[b'exit_status'])
 
     def test_linked_submission(self):
-        param_dict = {'ptypy_version': 'ptychotools_local',
+        param_dict = {'ptypy_version': 'ptycho-tools/dlsSD12020',
                       'cluster_queue': 'HAMILTON',
                       'total_num_processors': 40,
                       'num_gpus_per_node': 4,
