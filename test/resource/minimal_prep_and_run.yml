@@ -48,14 +48,14 @@ parameter_tree:
         distance: 7.0
         energy: 6.2
         intensities:
-          file: /home/clb02321/PycharmProjects/PtychographyToolsPrivate/test/resource/%(run)s.h5
+          file: /scratch/jenkins_agent/workspace/imaging_PtychographyTools_1_build/PtychographyTools.git/build/lib/test/resource/%(run)s.h5
           key: data
         name: Hdf5Loader
         orientation: 0
         positions:
           fast_key: y
           fast_multiplier: 1.0
-          file: /home/clb02321/PycharmProjects/PtychographyToolsPrivate/test/resource/%(run)s.h5
+          file: /scratch/jenkins_agent/workspace/imaging_PtychographyTools_1_build/PtychographyTools.git/build/lib/test/resource/%(run)s.h5
           slow_key: x
           slow_multiplier: 1.0
         psize: 1.72e-04
