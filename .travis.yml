@@ -25,7 +25,7 @@ script:
   - echo $PYTHONPATH
   - conda list
   - python setup.py build # test that the package buikds
-  - py.test build/lib/test -v -m "not ptypy" --cov test --cov-report term-missing # now run the tests
+  - py.test build/lib/test -v --ignore=build/lib/test/script_tests -m "not ptypy" --cov test --cov-report term-missing # now run the tests
 
 after_script:
   - coveralls
