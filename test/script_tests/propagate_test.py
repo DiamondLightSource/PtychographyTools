@@ -18,6 +18,7 @@ from ptychotools.utils.io import two_floats
 
 
 @pytest.mark.ptypy
+@unittest.skip("")
 class PropagateTest(unittest.TestCase):
     def setUp(self):
         self.working_directory = tempfile.mkdtemp(prefix='run_test')
