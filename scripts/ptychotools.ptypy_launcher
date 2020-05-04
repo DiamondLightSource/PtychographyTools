@@ -13,6 +13,7 @@ usage() {
       echo ":-h returns this help."
       echo ":-c: path to the cluster config file."
       echo ":-l links together all reconstructions specified by the json and identifier."
+      echo ":-g uses the GPU-accelerated version of ptypy"
       echo ":-j: path to the json file containing the reconstruction configuration."
       echo ":-i: identifier/scan_number. This can be a list in a file which ends .ptypy."
       echo ":-o: output	folder for the reconstruction (will be created).
@@ -23,7 +24,7 @@ usage() {
 PROPAGATE=false
 LINKED=false
 
-while getopts "hlj:c:i:o:p:" opt; do
+while getopts "hlgj:c:i:o:p:" opt; do
   case $opt in
     c )
       CLUSTER_CONFIG_FILE=`readlink -e $OPTARG`;
@@ -43,6 +44,9 @@ while getopts "hlj:c:i:o:p:" opt; do
       ;;
     l )
       LINKED=true
+      ;;
+    g )
+      USE_GPU=true
       ;;
     p )
       PROPAGATE=true;
@@ -74,6 +78,12 @@ then
 else
     source $CLUSTER_CONFIG_FILE; # this populates a bunch of parameters, so that's why they suddenly appear! Should document these.
     mkdir -p -m777 $LOG_DIRECTORY
+fi
+
+if $USE_GPU;
+then
+    TOTAL_NUM_PROCESSORS=4;
+    NUM_GPUS_PER_NODE=4;
 fi
 
 if [ -z ${JSON_FILE+x} ];
