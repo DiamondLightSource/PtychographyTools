@@ -47,6 +47,11 @@ parser.add_argument('--plot', '-P',
                     default=0,
                     type=int)
 
+parser.add_argument('--gpu', '-G',
+                    dest="use_gpu",
+                    help="Using the GPU-accelerated version of ptypy",
+                    action="store_true")
+
 args = parser.parse_args()
 
 args.identifier = args.identifier[0] if len(args.identifier)<2 else args.identifier
@@ -93,6 +98,7 @@ if args.plotting:
 else:
     log(3, "Turning the plotting off.")
     parameters.io.autoplot = u.Param(active=False)
+
 # make sure we aren't randomly writing somewhere if this isn't set.
 if args.output_folder is not None:
     parameters.io.home = io.get_output_folder_name(args)
@@ -106,8 +112,15 @@ else:
     parameters.io.autosave = u.Param(active=False)
     log(3, "Autosave is off. No output will be saved.")
 
-
-
+# Replace engine with GPU-accelerated version (only works for DM right now)
+if args.use_gpu:
+    for id, engine in parameters.engines.items():
+        if engine.name == "DM":
+            engine.name = "DM_pycuda_stream"
+            log(3, "Replacing the DM engine with the gpu-accelerated DM_pycuda_stream")
+        else:
+            log(3, "There is currently no gpu-acclerated version of the %s engine" %engine.name)
+            
 if args.share_probe:
     log(3, "Sharing the probe across scans: %s" % args.identifier)
     # need to duplicate the scans here but parse with different identifiers.

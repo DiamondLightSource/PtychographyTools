@@ -23,6 +23,8 @@ usage() {
 
 PROPAGATE=false
 LINKED=false
+USE_GPU=false
+EXTRA_ARGS=""
 
 while getopts "hlgj:c:i:o:p:" opt; do
   case $opt in
@@ -84,6 +86,7 @@ if $USE_GPU;
 then
     TOTAL_NUM_PROCESSORS=4;
     NUM_GPUS_PER_NODE=4;
+    EXTRA_ARGS="$EXTRA_ARGS -g"
 fi
 
 if [ -z ${JSON_FILE+x} ];
@@ -132,7 +135,7 @@ then
     if $PROPAGATE;
     then
         log "I'll propagate the result" $LOG_FILE
-        jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -q -j $JSON_FILE -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE -i "$IDENTIFIER_LIST"`
+        jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -q -j $JSON_FILE -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE -i "$IDENTIFIER_LIST" $EXTRA_ARGS`
 
 
     else
@@ -148,7 +151,7 @@ then
         log "identifier list:$IDENTIFIER_LIST" $LOG_FILE
         IDENTIFIER=`echo ${IDENTIFIER_LIST}`
         log "identifier is:$IDENTIFIER" $LOG_FILE
-        jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i "$IDENTIFIER" -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -q`
+        jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i "$IDENTIFIER" -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -q $EXTRA_ARGS`
 
     fi
     echo "$1 (linked submission) --> $LOG_FILE / jobid:${jid}"
@@ -168,12 +171,12 @@ else
         if $PROPAGATE;
         then
             log "I'll propagate the result" $LOG_FILE
-            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE`
+            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE $EXTRA_ARGS`
 
 
         else
             log "Not propagating the results" $LOG_FILE
-            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE`
+            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE $EXTRA_ARGS`
         fi
         echo "$IDENTIFIER --> $LOG_FILE / jobid:${jid}"
     done

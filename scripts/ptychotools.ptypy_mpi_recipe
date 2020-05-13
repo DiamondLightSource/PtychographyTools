@@ -12,7 +12,8 @@ usage() {
       echo ":-i: identifier/scan_number."
       echo ":-o: output folder for the reconstruction (will be created)."
       echo ":-v: ptypy version to use"
-      echo ":-n: total number of CPU processors"  
+      echo ":-n: total number of CPU processors"
+      echo ":-g: uses the GPU-accelerated version of ptypy"
       echo ":-p: Propagate the result"
       echo ":-q: Link the reconstructions"
 }
@@ -20,7 +21,7 @@ usage() {
 PROPAGATE=false
 EXTRA_ARGS="-P 0"
 
-while getopts "hqs:z:j:i:o:v:n:p:" opt; do
+while getopts "hqs:z:j:i:o:gv:n:p:" opt; do
   case $opt in
     h )
       usage
@@ -43,6 +44,9 @@ while getopts "hqs:z:j:i:o:v:n:p:" opt; do
       ;;
     o )
       OUTPUT_FOLDER=$OPTARG;
+      ;;
+    g )
+      EXTRA_ARGS="$EXTRA_ARGS -G"
       ;;
     v )
       PTYPY_VERSION=$OPTARG;
