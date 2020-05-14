@@ -25,6 +25,7 @@ PROPAGATE=false
 LINKED=false
 USE_GPU=false
 EXTRA_ARGS=""
+JOB_NAME="ptypy"
 
 while getopts "hlgj:c:i:o:p:" opt; do
   case $opt in
@@ -87,6 +88,7 @@ then
     TOTAL_NUM_PROCESSORS=4;
     NUM_GPUS_PER_NODE=4;
     EXTRA_ARGS="$EXTRA_ARGS -g"
+    JOB_NAME="ptypy_gpu"
 fi
 
 if [ -z ${JSON_FILE+x} ];
@@ -110,12 +112,12 @@ then
     module load hamilton-quiet
 #    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH"
     MEMORY_REQUEST=9G # for Hamilton we hardcode 9G per slot
-    qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE"
+    qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE -N $JOB_NAME"
 
 else
     module load global/cluster-quiet
     MEMORY_REQUEST=12G  # for com14 we hardcode 12GB per slot
-    qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE"
+    qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
 fi
 
 echo "The log files are:"
