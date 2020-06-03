@@ -77,10 +77,8 @@ def convert_ptyr_to_mapping(file_path, border=80, rmramp=True):
         y = y[border:-border]
         data = obj['data'][...].squeeze()
         data = data[border:-border, border:-border]
+        if rmramp: data = ptypy.utils.rmphaseramp(data)
         data = data.reshape(data.shape+(1, 1))
-
-        if rmramp:
-            data = ptypy.utils.rmphaseramp(data)
 
         magnitudes_path = file_path.split('.')[0] + obj_name + '_mag.nxs'
         write_dataset_to_file(np.abs(data), magnitudes_path, obj_name, x, y, tag='mag_')
