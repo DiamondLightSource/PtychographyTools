@@ -1,7 +1,7 @@
 '''
 Useful operations for ptypy_parameters
-
 '''
+
 import json
 import ptypy.utils as u
 from ptypy.core import Ptycho
@@ -9,29 +9,6 @@ import logging
 import json
 import yaml
 from .io import get_output_folder_name
-
-# not needed in python 3
-# def byteify(data, ignore_dicts=False):
-#     '''
-#     converts all strings to utf8 encoding, including dictionary keys
-#     '''
-#     raise DeprecationWarning('This function is deprecated ')
-#     # if this is a unicode string, return its string representation
-#     if isinstance(data, str):
-#         return data.encode('utf-8')
-#     # if this is a list of values, return list of byteified values
-#     if isinstance(data, list):
-#         return [byteify(item, ignore_dicts=True) for item in data]
-#     # if this is a dictionary, return dictionary of byteified keys and values
-#     # but only if we haven't already byteified it
-#     if isinstance(data, dict) and not ignore_dicts:
-#         return {
-#             byteify(key, ignore_dicts=True): byteify(value, ignore_dicts=True)
-#             for key, value in data.items()
-#         }
-#     # if it's anything else, return it in its original form
-#     return data
-
 
 def paramtree_to_json(paramtree, basefile, filepath):
     '''
@@ -52,7 +29,7 @@ def paramtree_to_json(paramtree, basefile, filepath):
 
 def paramtree_to_yaml(paramtree, basefile, filepath):
     '''
-    generates a json file from a param tree
+    generates a yaml file from a param tree
     :param paramtree: The ptypy parameter tree to save out.
     :param basefile: An existing ptyr file that we are basing this tree on.
     :param filepath: the path the json file
@@ -69,7 +46,7 @@ def paramtree_to_yaml(paramtree, basefile, filepath):
 
 def paramtree_from_yaml(yaml_file):
     '''
-    generates a ptypy param tree from a json file
+    generates a ptypy param tree from a yaml file
     :param json_file: the path the json file
     :return: a Param based structure.
     '''
