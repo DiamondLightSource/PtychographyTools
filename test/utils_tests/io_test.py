@@ -58,7 +58,7 @@ class IoTest(unittest.TestCase):
         output = two_floats(valid_string)
         self.assertListEqual(output, expected_output, msg="returned list %s was not the same as expected %s" %
                                                           (str(output), str(expected_output)))
-
+    @unittest.skip("needs ptypy")
     def test_write_dataset_to_file(self):
         # this is just a smoke test to see if it runs. At the moment testing more would be overbaord.
         dtypes = [np.complex, np.float]

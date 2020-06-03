@@ -6,8 +6,12 @@ import os
 from . import log
 import numpy as np
 import h5py as h5
-import ptypy
 
+try:
+    import ptypy.utils as u
+except ImportError:
+    print("Could not import ptypy.")
+    
 rmpr = None  # ramp removal
 uw = None  # unwrapping
 
