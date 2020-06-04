@@ -96,6 +96,75 @@ def convert_ptyr_to_mapping(file_path, border=80, rmramp=True):
     return {'complex': complex_paths, 'phase': phase_paths, 'magnitude': magnitudes_paths}
 
 
+def write_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, rmramp=True, norm=True):
+
+    def create_nx_file(filename, energies, shape, N):
+        f = h5.File(filename, 'w')
+        entry = f.create_group('entry1')
+        entry['definition'] = np.array(['NXstxm'], dtype='<S6')
+        entry.attrs['NX_class'] = 'NXentry'
+        counter = entry.create_group('Counter1')
+        counter.attrs['NX_class'] = 'NXdata'
+        counter['scan_type'] = 'Sample'
+        counter['count_time'] = np.array([0.05]*(N))
+        counter.create_dataset('data', data=np.zeros((N,) + shape), dtype=np.float)
+        counter.create_dataset('photon_energy', data=energies, dtype=np.float)
+        counter['photon_energy'].attrs['axis'] = 1
+        counter.create_dataset('sample_x', data=np.arange(shape[1]), dtype=np.float)
+        counter['sample_x'].attrs['axis'] = 3
+        counter.create_dataset('sample_y', data=np.arange(shape[0]), dtype=np.float)
+        counter['sample_y'].attrs['axis'] = 2
+        return f
+
+    out_phase    = out_path + "/" + prefix + "phase.nxs"
+    out_odensity = out_path + "/" + prefix + "optical_density.nxs"
+
+    shapes = []
+    energy = []
+    objs   = []
+    nfiles = len(file_paths)
+    for idx in range(nfiles):
+        fread = h5.File(file_paths[idx], 'r')
+        obj_keys = '/content/obj'
+        obj = list(fread[obj_keys].values())[0]
+        enrg = obj['_energy'][...]
+        data = obj['data'][0,border:-border, border:-border]
+        sh = data.shape
+        objs.append(data)
+        energy.append(enrg)
+        shapes.append(np.array(sh))
+    energy = np.array(energy)*1e3 # convert to eV
+    log(3, "The energy ranges from {} to {} eV".format(energy[0], energy[-1]))
+    shapes = np.array(shapes)
+    full_shape = np.max(shapes[:, 0]), np.max(shapes[:, 1])
+    log(3, "The common full shape of the object is {}".format(full_shape))
+    
+    # Create Mantis/Nexus files for phase and optical density
+    fp = create_nx_file(out_phase, energy, full_shape, nfiles)
+    fo = create_nx_file(out_odensity, energy, full_shape, nfiles)
+    
+    ctr = 0
+    for idx in range(nfiles):
+        slow_top = shapes[idx, 0]
+        fast_top = shapes[idx, 1]
+        O = objs[idx].squeeze()
+        if rmramp:
+            O = u.rmphaseramp(O)
+        if norm:
+            O *= np.exp(-1j*np.median(np.angle(O)))
+        phase = np.angle(O)
+        odensity = -np.log(np.abs(O)**2)
+        if norm:
+            odensity -= np.median(odensity)
+        fp['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = phase
+        fo['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = odensity
+        ctr += 1
+    fp.close()
+    fo.close()
+    log(3, "Saved phase to {}".format(out_phase))
+    log(3, "Saved optical density to {}".format(out_odensity))
+
+
 def write_propagated_output(output_filename, propagated_projections, probe_x, probe_y, probe, zaxis, obj_x, obj_y, obj):
     with h5.File(output_filename, 'w') as fout:
         fout.create_group('entry')

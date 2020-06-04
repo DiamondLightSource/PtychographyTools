@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+import argparse, os, sys
+
+from ptychotools.utils import io, log
+import ptypy.utils as u
+u.verbose.set_level(3)
+
+parser = argparse.ArgumentParser(description="Combining multiple reconstructions of a spectro scan")
+parser.add_argument("scans", type=str, 
+                    help="A range of scan numbers (e.g. 400-450) or .ptypy file with scan numbers")
+parser.add_argument("path", type=str,
+                    help="The folder location where all the ptypy reconstructions are saved")
+args = parser.parse_args()
+
+if args.scans.endswith(".ptypy"):
+    print(args.scans)
+    with open(args.scans) as f:
+        scan_ids = [int(l) for l in f.readlines()]
+elif "-" in args.scans:
+    start, stop = args.scans.split("-")
+    print(start, stop)
+    scan_ids = list(range(int(start),int(stop)+1))
+else:
+    log(3, "Could not parse given scan IDs, either .ptypy file or range has to be provided.")
+    sys.exit(0)
+
+fnames = [args.path + "scan_%d/scan_%d.ptyr" %(sid,sid) for sid in scan_ids]
+outpath = args.path + "spectro_scan_%d_%d" %(scan_ids[0], scan_ids[-1])
+prefix = "scan_%d_%d_" %(scan_ids[0], scan_ids[-1])
+try:
+    os.mkdir(outpath)
+    log(3,"Create output folder: {}".format(outpath))
+except FileExistsError:
+    log(3,"Output folder ({}) already exists".format(outpath))
+
+io.write_ptyr_to_nxstxm(fnames, outpath, prefix=prefix, border=80, rmramp=True)

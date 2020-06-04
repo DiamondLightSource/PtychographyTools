@@ -11,6 +11,6 @@ def report_ptypy_file(ptyr_filepath, verbose=False):
     properties = h5read(ptyr_filepath)
 
     if verbose:
-        print properties
+        print(properties)
 
     return properties
