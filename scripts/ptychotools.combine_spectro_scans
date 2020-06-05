@@ -7,9 +7,17 @@ u.verbose.set_level(3)
 
 parser = argparse.ArgumentParser(description="Combining multiple reconstructions of a spectro scan")
 parser.add_argument("scans", type=str, 
-                    help="A range of scan numbers (e.g. 400-450) or .ptypy file with scan numbers")
+                    help="A range of scan numbers (e.g. 400-450) or .ptypy file with scan numbers.")
 parser.add_argument("path", type=str,
-                    help="The folder location where all the ptypy reconstructions are saved")
+                    help="The folder location where all the ptypy reconstructions are saved.")
+parser.add_argument("-r", "--ramp", action="store_true",
+                    help="Remove phase ramp in the reconstructions.")
+parser.add_argument("-n", "--norm", action="store_true",
+                    help="Normalise each reconstruction to the median phase/optical density.")
+parser.add_argument("-b", "--border", type=int, default=25,
+                    help="Border to be cropped on each side of the reconstruction.")
+parser.add_argument("-s", "--single", action="store_true",
+                    help="Use this option if the reconstructions are stored in a single ptyr file")
 args = parser.parse_args()
 
 if args.scans.endswith(".ptypy"):
@@ -24,7 +32,10 @@ else:
     log(3, "Could not parse given scan IDs, either .ptypy file or range has to be provided.")
     sys.exit(0)
 
-fnames = [args.path + "scan_%d/scan_%d.ptyr" %(sid,sid) for sid in scan_ids]
+if args.single:
+    fnames = args.path + "scan_%d_%d/scan_%d_%d.ptyr" %(scan_ids[0], scan_ids[-1], scan_ids[0], scan_ids[-1])
+else:
+    fnames = [args.path + "scan_%d/scan_%d.ptyr" %(sid,sid) for sid in scan_ids]
 outpath = args.path + "spectro_scan_%d_%d" %(scan_ids[0], scan_ids[-1])
 prefix = "scan_%d_%d_" %(scan_ids[0], scan_ids[-1])
 try:
@@ -33,4 +44,7 @@ try:
 except FileExistsError:
     log(3,"Output folder ({}) already exists".format(outpath))
 
-io.write_ptyr_to_nxstxm(fnames, outpath, prefix=prefix, border=80, rmramp=True)
+if args.single:
+    io.write_single_ptyr_to_nxstxm(fnames, outpath, prefix=prefix, border=args.border, rmramp=args.ramp, norm=args.norm)
+else:
+    io.write_multiple_ptyr_to_nxstxm(fnames, outpath, prefix=prefix, border=args.border, rmramp=args.ramp, norm=args.norm)

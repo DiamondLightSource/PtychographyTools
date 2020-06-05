@@ -16,10 +16,18 @@ rmpr = None  # ramp removal
 uw = None  # unwrapping
 
 
+def get_common_id(identifier):
+    if isinstance(identifier, list):
+        common_id = str(identifier[0]) + "_" + str(identifier[-1])
+    else:
+        common_id = str(identifier)
+    return common_id
+
 def get_output_folder_name(args):
     from datetime import datetime
     now = datetime.now()
-    id = args.identifier[0] if isinstance(args.identifier, list) else args.identifier
+    id = get_common_id(args.identifier)
+    #id = args.identifier[0] if isinstance(args.identifier, list) else args.identifier
     if args.identifier is not None:
         output_path = os.path.join(args.output_folder, "scan_{}".format(id))
     else:
@@ -96,25 +104,25 @@ def convert_ptyr_to_mapping(file_path, border=80, rmramp=True):
     return {'complex': complex_paths, 'phase': phase_paths, 'magnitude': magnitudes_paths}
 
 
-def write_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, rmramp=True, norm=True):
+def create_nxstxm_file(filename, energies, shape, N):
+    f = h5.File(filename, 'w')
+    entry = f.create_group('entry1')
+    entry['definition'] = np.array(['NXstxm'], dtype='<S6')
+    entry.attrs['NX_class'] = 'NXentry'
+    counter = entry.create_group('Counter1')
+    counter.attrs['NX_class'] = 'NXdata'
+    counter['scan_type'] = 'Sample'
+    counter['count_time'] = np.array([0.05]*(N))
+    counter.create_dataset('data', data=np.zeros((N,) + shape), dtype=np.float)
+    counter.create_dataset('photon_energy', data=energies, dtype=np.float)
+    counter['photon_energy'].attrs['axis'] = 1
+    counter.create_dataset('sample_x', data=np.arange(shape[1]), dtype=np.float)
+    counter['sample_x'].attrs['axis'] = 3
+    counter.create_dataset('sample_y', data=np.arange(shape[0]), dtype=np.float)
+    counter['sample_y'].attrs['axis'] = 2
+    return f
 
-    def create_nx_file(filename, energies, shape, N):
-        f = h5.File(filename, 'w')
-        entry = f.create_group('entry1')
-        entry['definition'] = np.array(['NXstxm'], dtype='<S6')
-        entry.attrs['NX_class'] = 'NXentry'
-        counter = entry.create_group('Counter1')
-        counter.attrs['NX_class'] = 'NXdata'
-        counter['scan_type'] = 'Sample'
-        counter['count_time'] = np.array([0.05]*(N))
-        counter.create_dataset('data', data=np.zeros((N,) + shape), dtype=np.float)
-        counter.create_dataset('photon_energy', data=energies, dtype=np.float)
-        counter['photon_energy'].attrs['axis'] = 1
-        counter.create_dataset('sample_x', data=np.arange(shape[1]), dtype=np.float)
-        counter['sample_x'].attrs['axis'] = 3
-        counter.create_dataset('sample_y', data=np.arange(shape[0]), dtype=np.float)
-        counter['sample_y'].attrs['axis'] = 2
-        return f
+def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, rmramp=True, norm=True):
 
     out_phase    = out_path + "/" + prefix + "phase.nxs"
     out_odensity = out_path + "/" + prefix + "optical_density.nxs"
@@ -128,7 +136,7 @@ def write_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, rmramp=True
         obj_keys = '/content/obj'
         obj = list(fread[obj_keys].values())[0]
         enrg = obj['_energy'][...]
-        data = obj['data'][0,border:-border, border:-border]
+        data = obj['data'][0,border:-border,border:-border]
         sh = data.shape
         objs.append(data)
         energy.append(enrg)
@@ -140,11 +148,60 @@ def write_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, rmramp=True
     log(3, "The common full shape of the object is {}".format(full_shape))
     
     # Create Mantis/Nexus files for phase and optical density
-    fp = create_nx_file(out_phase, energy, full_shape, nfiles)
-    fo = create_nx_file(out_odensity, energy, full_shape, nfiles)
+    fp = create_nxstxm_file(out_phase, energy, full_shape, nfiles)
+    fo = create_nxstxm_file(out_odensity, energy, full_shape, nfiles)
     
     ctr = 0
     for idx in range(nfiles):
+        slow_top = shapes[idx, 0]
+        fast_top = shapes[idx, 1]
+        O = objs[idx].squeeze()
+        if rmramp:
+            O = u.rmphaseramp(O)
+        if norm:
+            O *= np.exp(-1j*np.median(np.angle(O)))
+        phase = np.angle(O)
+        odensity = -np.log(np.abs(O)**2)
+        if norm:
+            odensity -= np.median(odensity)
+        fp['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = phase
+        fo['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = odensity
+        ctr += 1
+    fp.close()
+    fo.close()
+    log(3, "Saved phase to {}".format(out_phase))
+    log(3, "Saved optical density to {}".format(out_odensity))
+
+def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmramp=True, norm=True):
+
+    out_phase    = out_path + "/" + prefix + "phase.nxs"
+    out_odensity = out_path + "/" + prefix + "optical_density.nxs"
+
+    shapes = []
+    energy = []
+    objs   = []
+    fread = h5.File(file_path, 'r')
+    obj_keys = '/content/obj'
+    scan_keys = list(fread[obj_keys].keys())
+    for obj in fread[obj_keys].values():
+        enrg = obj['_energy'][...]
+        data = obj['data'][0,border:-border,border:-border]
+        sh = data.shape
+        objs.append(data)
+        energy.append(enrg)
+        shapes.append(np.array(sh))
+    energy = np.array(energy)*1e3 # convert to eV
+    log(3, "The energy ranges from {} to {} eV".format(energy[0], energy[-1]))
+    shapes = np.array(shapes)
+    full_shape = np.max(shapes[:, 0]), np.max(shapes[:, 1])
+    log(3, "The common full shape of the object is {}".format(full_shape))
+    
+    # Create Mantis/Nexus files for phase and optical density
+    fp = create_nxstxm_file(out_phase, energy, full_shape, len(scan_keys))
+    fo = create_nxstxm_file(out_odensity, energy, full_shape, len(scan_keys))
+    
+    ctr = 0
+    for idx in range(len(scan_keys)):
         slow_top = shapes[idx, 0]
         fast_top = shapes[idx, 1]
         O = objs[idx].squeeze()

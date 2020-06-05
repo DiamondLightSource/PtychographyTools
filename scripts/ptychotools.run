@@ -74,7 +74,7 @@ if isinstance(args.identifier, list) and not args.share_probe:
 
 
 parameters = get_parameters(args)
-parameters.run = args.identifier[0] if isinstance(args.identifier, list) else args.identifier
+parameters.run = io.get_common_id(args.identifier)
 
 
 if args.plotting:
@@ -102,8 +102,8 @@ else:
 # make sure we aren't randomly writing somewhere if this isn't set.
 if args.output_folder is not None:
     parameters.io.home = io.get_output_folder_name(args)
-    run_name = parameters.run[0] if isinstance(parameters.run, list) else parameters.run
-    parameters.io.rfile = "%s/scan_%s.ptyr" % (io.get_output_folder_name(args), str(run_name))
+    run_name = io.get_common_id(parameters.run)
+    parameters.io.rfile = "%s/scan_%s.ptyr" % (io.get_output_folder_name(args), run_name)
     parameters.io.autosave = u.Param(active=True, interval=100)
     log(3, "Autosave is on, with io going in {}, and the final reconstruction into {}".format(parameters.io.home,
                                                                                               parameters.io.rfile))
@@ -128,7 +128,7 @@ if args.share_probe:
         log(3, "RuntimeError:For linked scans we should only have one scan listed in the json file.")
         raise RuntimeError("For linked scans we should only have one scan listed in the json file.")
     master_scan = parameters.scans[list(parameters.scans.keys())[0]]
-    master_scan.data.dfile = "%s/scan_%s.ptyd" % (io.get_output_folder_name(args), str(run_name))
+    master_scan.data.dfile = "%s/scan_%s.ptyd" % (io.get_output_folder_name(args), run_name)
     del parameters.scans[list(parameters.scans.keys())[0]]  # delete it for now, we will add it back in with a different name
     for identifier in args.identifier:
         parameters.run = identifier
@@ -143,19 +143,26 @@ if args.share_probe:
             elif isinstance(sub_entry, str):
                 data_entry[sub_entry_key] = sub_entry % parameters
 
+    print(args.identifier)
+
     # now run to level 3 to get the containers sorted
     P = Ptycho(parameters, level=3)
     probe_storages = list(P.probe.storages.values())
     master_storage = probe_storages[0]
+    to_delete = []
     for sname, storage in P.probe.storages.items():
         for v in storage.views:
             v.storage = master_storage
             v.storageID = master_storage.ID
         if sname is not master_storage.ID:
-            P.probe.storages.pop(sname) # delete its originally created storage
+            to_delete.append(sname)
     parallel.barrier()
     P.probe.reformat()  # deal with it!
     P.print_stats()
+    parallel.barrier()
+    #if parallel.master:
+    for sname in set(to_delete):
+        P.probe.storages.pop(sname) # delete its originally created storage
     parallel.barrier()
     P.init_engine()
     parallel.barrier()
