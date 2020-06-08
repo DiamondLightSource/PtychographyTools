@@ -91,7 +91,7 @@ class RunTest(unittest.TestCase):
 
     def validate_output_files(self, expected_number_of_objects, expected_number_of_probes):
         # now check the output
-        output_path = os.path.join(self.working_directory, 'scan_scan1/scan_scan1.ptyr')
+        output_path = os.path.join(self.working_directory, 'scan_scan1_scan2/scan_scan1_scan2.ptyr')
         output_file = h5.File(output_path, 'r')
 
         object_ids = output_file['content/obj'].keys()
@@ -104,17 +104,17 @@ class RunTest(unittest.TestCase):
                                                                                                       expected_number_of_probes))
 
         # check that the ptyd file was written.
-        self.assertTrue(os.path.exists(os.path.join(self.working_directory, 'scan_scan1/scan_scan1.ptyd')),
+        self.assertTrue(os.path.exists(os.path.join(self.working_directory, 'scan_scan1_scan2/scan_scan1.ptyd')),
                         msg="The ptyd file doesn't exist")
 
         for id in object_ids:
-            phase_nexus = os.path.join(self.working_directory, 'scan_scan1/scan_scan1%s_phase.nxs' % id)
+            phase_nexus = os.path.join(self.working_directory, 'scan_scan1_scan2/scan_scan1%s_phase.nxs' % id)
             self.assertTrue(os.path.exists(phase_nexus),
                             msg="The phase nexus file: %s does not exist" % phase_nexus)
-            mag_nexus = os.path.join(self.working_directory, 'scan_scan1/scan_scan1%s_mag.nxs' % id)
+            mag_nexus = os.path.join(self.working_directory, 'scan_scan1_scan2/scan_scan1%s_mag.nxs' % id)
             self.assertTrue(os.path.exists(mag_nexus),
                             msg="The mag nexus file: %s does not exist" % mag_nexus)
-            complex_nexus = os.path.join(self.working_directory, 'scan_scan1/scan_scan1%s_complex.nxs' % id)
+            complex_nexus = os.path.join(self.working_directory, 'scan_scan1_scan2/scan_scan1%s_complex.nxs' % id)
             self.assertTrue(os.path.exists(complex_nexus),
                             msg="The complex valued nexus file: %s does not exist" % complex_nexus)
 
