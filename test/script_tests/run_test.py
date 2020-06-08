@@ -50,7 +50,7 @@ class RunTest(unittest.TestCase):
 
         expected_number_of_objects = 1
         expected_number_of_probes = 1
-        self.validate_output_files(expected_number_of_objects, expected_number_of_probes)
+        self.validate_output_files(expected_number_of_objects, expected_number_of_probes, "scan1")
 
     def test_two_identifiers_fails(self):
 
@@ -87,11 +87,11 @@ class RunTest(unittest.TestCase):
         self.assertEqual(out['exitcode'], 0, msg="The run command returned a non zero exit code: %s" % str(out))
         expected_number_of_objects = 2
         expected_number_of_probes = 1
-        self.validate_output_files(expected_number_of_objects, expected_number_of_probes)
+        self.validate_output_files(expected_number_of_objects, expected_number_of_probes, "scan1_scan2")
 
-    def validate_output_files(self, expected_number_of_objects, expected_number_of_probes):
+    def validate_output_files(self, expected_number_of_objects, expected_number_of_probes, identifier):
         # now check the output
-        output_path = os.path.join(self.working_directory, 'scan_scan1_scan2/scan_scan1_scan2.ptyr')
+        output_path = os.path.join(self.working_directory, 'scan_{}/scan_{}.ptyr'.format(identifier,identifier))
         output_file = h5.File(output_path, 'r')
 
         object_ids = output_file['content/obj'].keys()
@@ -104,17 +104,17 @@ class RunTest(unittest.TestCase):
                                                                                                       expected_number_of_probes))
 
         # check that the ptyd file was written.
-        self.assertTrue(os.path.exists(os.path.join(self.working_directory, 'scan_scan1_scan2/scan_scan1.ptyd')),
+        self.assertTrue(os.path.exists(os.path.join(self.working_directory, 'scan_{}/scan_scan1.ptyd'.format(identifier))),
                         msg="The ptyd file doesn't exist")
 
         for id in object_ids:
-            phase_nexus = os.path.join(self.working_directory, 'scan_scan1_scan2/scan_scan1%s_phase.nxs' % id)
+            phase_nexus = os.path.join(self.working_directory, 'scan_{}/scan_{}{}_phase.nxs'.format(identifier,identifier,id))
             self.assertTrue(os.path.exists(phase_nexus),
                             msg="The phase nexus file: %s does not exist" % phase_nexus)
-            mag_nexus = os.path.join(self.working_directory, 'scan_scan1_scan2/scan_scan1%s_mag.nxs' % id)
+            mag_nexus = os.path.join(self.working_directory, 'scan_{}/scan_{}{}_mag.nxs'.format(identifier,identifier,id))
             self.assertTrue(os.path.exists(mag_nexus),
                             msg="The mag nexus file: %s does not exist" % mag_nexus)
-            complex_nexus = os.path.join(self.working_directory, 'scan_scan1_scan2/scan_scan1%s_complex.nxs' % id)
+            complex_nexus = os.path.join(self.working_directory, 'scan_{}/scan_{}{}_complex.nxs'.format(identifier,identifier,id))
             self.assertTrue(os.path.exists(complex_nexus),
                             msg="The complex valued nexus file: %s does not exist" % complex_nexus)
 
