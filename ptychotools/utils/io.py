@@ -92,7 +92,7 @@ def convert_ptyr_to_mapping(file_path, border=80, rmramp=True):
         write_dataset_to_file(np.abs(data), magnitudes_path, obj_name, x, y, tag='mag_')
 
         phase_path = file_path.split('.')[0] + obj_name+'_phase.nxs'
-        write_dataset_to_file(data, phase_path, obj_name, x, y, tag='phase_')
+        write_dataset_to_file(np.angle(data), phase_path, obj_name, x, y, tag='phase_')
 
         complex_path = file_path.split('.')[0] + obj_name+'_complex.nxs'
         write_dataset_to_file(data, complex_path, obj_name, x, y, tag='complex_', dtype=np.complex128)
