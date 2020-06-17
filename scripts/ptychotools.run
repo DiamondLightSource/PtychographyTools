@@ -104,8 +104,13 @@ if args.output_folder is not None:
     parameters.io.home = io.get_output_folder_name(args)
     run_name = io.get_common_id(parameters.run)
     parameters.io.rfile = "%s/scan_%s.ptyr" % (io.get_output_folder_name(args), run_name)
-    parameters.io.autosave = u.Param(active=True, interval=100)
-    log(3, "Autosave is on, with io going in {}, and the final reconstruction into {}".format(parameters.io.home,
+    try:
+        parameters.io.autosave.active
+        parameters.io.autosave.interval
+    except (KeyError, AttributeError):
+        parameters.io.autosave = u.Param(active=True, interval=100)
+    log(3, "Autosave is {}, with io going in {}, and the final reconstruction into {}".format(parameters.io.autosave.active,
+                                                                                              parameters.io.home,
                                                                                               parameters.io.rfile))
 else:
     parameters.io.rfile = None
