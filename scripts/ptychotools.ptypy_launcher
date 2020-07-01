@@ -173,7 +173,7 @@ else
         if $PROPAGATE;
         then
             log "I'll propagate the result" $LOG_FILE
-            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE $EXTRA_ARGS`
+            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE $EXTRA_ARGS -p $ZRANGE`
 
 
         else

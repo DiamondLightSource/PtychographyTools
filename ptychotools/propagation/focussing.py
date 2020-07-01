@@ -26,8 +26,8 @@ def propagate_probe(probe, psize, energy, distance, zrange, NPTS=1024):
     '''
     xsize, ysize = probe.shape
 
-    xaxis = ((np.arange(xsize) - xsize // 2) * psize[0])
-    yaxis = ((np.arange(ysize) - ysize // 2) * psize[0])
+    xaxis = ((np.arange(xsize) - xsize // 2) * psize)
+    yaxis = ((np.arange(ysize) - ysize // 2) * psize)
     zaxis = np.linspace(zrange[0], zrange[1], NPTS)
     outshape = (len(zaxis),) + probe.shape
 

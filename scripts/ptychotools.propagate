@@ -59,19 +59,17 @@ obj = first_storage_obj.data[0]
 obj_x = np.array(first_storage_obj.grids[0])[0, :, 0]
 obj_y = np.array(first_storage_obj.grids[1])[0, 0, :]
 
-psize = first_storage_probe._psize
-energy = parameters.scans[first_scan_name_probe.strip('S').split('G')[0]].data.energy
-distance = parameters.scans[first_scan_name_probe.strip('S').split('G')[0]].data.distance
+meta = P.model.scans[first_scan_name_probe.strip('S').split('G')[0]].ptyscan.meta
+energy = meta.energy
+distance = meta.distance
+psize = first_storage_probe._psize[0]
 
 logger.debug('Propagating the beam...')
 propagated_projections, zaxis, yaxis, xaxis = propagate_probe(probe, psize, energy, distance, args.zrange, NPTS=1024)
 logger.debug('Finished propagation...')
 
-output_file_path = '{}_propagated_{}_{}.nxs'.format(os.path.join(args.output_folder, str(parameters.run)),
-                                                   str(args.zrange[0]), str(args.zrange[1]))
-
 logger.debug('Saving out the result...')
-
+output_file_path = '{}_propagated.nxs'.format(os.path.join(args.output_folder, "scan_" + str(parameters.run)))
 write_propagated_output(output_file_path, propagated_projections, probe_x, probe_y, probe, zaxis, obj_x, obj_y, obj)
 logger.debug("Finished. Output  in: %s " % output_file_path)
 
