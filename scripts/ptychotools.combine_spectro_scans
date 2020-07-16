@@ -12,10 +12,14 @@ parser.add_argument("path", type=str,
                     help="The folder location where all the ptypy reconstructions are saved.")
 parser.add_argument("-r", "--ramp", action="store_true",
                     help="Remove phase ramp in the reconstructions.")
+parser.add_argument("-a", "--rmsupport", type=float, default=0.5,
+                    help="Support for phase ramp removal given as a radius in fractional units, default is 0.5")
+parser.add_argument("-i", "--rmiter", type=int, default=2,
+                    help="Nr. of iterations for phase ramp removal, default is 2 iterations.")
 parser.add_argument("-n", "--norm", action="store_true",
                     help="Normalise each reconstruction to the median phase/optical density.")
-parser.add_argument("-b", "--border", type=int, default=25,
-                    help="Border to be cropped on each side of the reconstruction.")
+parser.add_argument("-b", "--border", type=int, default=20,
+                    help="Border to be cropped on each side of the reconstruction. Default is 20 px.")
 parser.add_argument("-s", "--single", action="store_true",
                     help="Use this option if the reconstructions are stored in a single ptyr file")
 args = parser.parse_args()
@@ -45,6 +49,8 @@ except FileExistsError:
     log(3,"Output folder ({}) already exists".format(outpath))
 
 if args.single:
-    io.write_single_ptyr_to_nxstxm(fnames, outpath, prefix=prefix, border=args.border, rmramp=args.ramp, norm=args.norm)
+    io.write_single_ptyr_to_nxstxm(fnames, outpath, prefix=prefix, border=args.border, 
+                                   rmramp=args.ramp, norm=args.norm, rmradius=args.rmsupport, rmiter=args.rmiter)
 else:
-    io.write_multiple_ptyr_to_nxstxm(fnames, outpath, prefix=prefix, border=args.border, rmramp=args.ramp, norm=args.norm)
+    io.write_multiple_ptyr_to_nxstxm(fnames, outpath, prefix=prefix, border=args.border, 
+                                     rmramp=args.ramp, norm=args.norm, rmradius=args.rmsupport, rmiter=args.rmiter)

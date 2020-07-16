@@ -1,9 +1,6 @@
 #!/bin/bash
 
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )" # this is the path to this launcher script
-
-echo $SCRIPT_PATH/ptychotools.utils
-
 source $SCRIPT_PATH/ptychotools.utils
 
 usage() {

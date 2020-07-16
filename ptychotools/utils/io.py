@@ -122,7 +122,7 @@ def create_nxstxm_file(filename, energies, shape, N):
     counter['sample_y'].attrs['axis'] = 2
     return f
 
-def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, rmramp=True, norm=True):
+def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, norm=True, rmramp=True, rmradius=0.5, rmiter=1):
 
     out_phase    = out_path + "/" + prefix + "phase.nxs"
     out_odensity = out_path + "/" + prefix + "optical_density.nxs"
@@ -136,7 +136,9 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, rm
         obj_keys = '/content/obj'
         obj = list(fread[obj_keys].values())[0]
         enrg = obj['_energy'][...]
-        data = obj['data'][0,border:-border,border:-border]
+        data = obj['data'][0]
+        if border > 0:
+            data = data[border:-border,border:-border]
         sh = data.shape
         objs.append(data)
         energy.append(enrg)
@@ -157,7 +159,11 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, rm
         fast_top = shapes[idx, 1]
         O = objs[idx].squeeze()
         if rmramp:
-            O = u.rmphaseramp(O)
+            ny,nx = O.shape
+            XX,YY = np.meshgrid(np.arange(nx) - nx//2, np.arange(ny) - ny//2)
+            W = np.sqrt(XX**2 + YY**2) < (rmradius * (nx+ny) / 4)
+            for i in range(rmiter):
+                O = u.rmphaseramp(O, weight=W)
         if norm:
             O *= np.exp(-1j*np.median(np.angle(O)))
         phase = np.angle(O)
@@ -172,7 +178,7 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, rm
     log(3, "Saved phase to {}".format(out_phase))
     log(3, "Saved optical density to {}".format(out_odensity))
 
-def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmramp=True, norm=True):
+def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmramp=True, norm=True, rmradius=0.5, rmiter=1):
 
     out_phase    = out_path + "/" + prefix + "phase.nxs"
     out_odensity = out_path + "/" + prefix + "optical_density.nxs"
@@ -185,7 +191,9 @@ def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmram
     scan_keys = list(fread[obj_keys].keys())
     for obj in fread[obj_keys].values():
         enrg = obj['_energy'][...]
-        data = obj['data'][0,border:-border,border:-border]
+        data = obj['data'][0]
+        if border > 0:
+            data = data[border:-border,border:-border]
         sh = data.shape
         objs.append(data)
         energy.append(enrg)
@@ -206,7 +214,11 @@ def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmram
         fast_top = shapes[idx, 1]
         O = objs[idx].squeeze()
         if rmramp:
-            O = u.rmphaseramp(O)
+            ny,nx = O.shape
+            XX,YY = np.meshgrid(np.arange(nx) - nx//2, np.arange(ny) - ny//2)
+            W = np.sqrt(XX**2 + YY**2) < (rmradius * (nx+ny) / 4)
+            for i in range(rmiter):
+                O = u.rmphaseramp(O, weight=W)
         if norm:
             O *= np.exp(-1j*np.median(np.angle(O)))
         phase = np.angle(O)
