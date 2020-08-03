@@ -122,6 +122,27 @@ def create_nxstxm_file(filename, energies, shape, N):
     counter['sample_y'].attrs['axis'] = 2
     return f
 
+def create_nxtomo_file(filename, angles, shape, N, name='default'):
+    f = h5.File(filename, 'w')
+    entry = f.create_group('entry1')
+    entry['definition'] = np.array(['NXtomo'], dtype='<S6')
+    entry.attrs['NX_class'] = 'NXentry'
+    instrument = entry.create_group('instrument')
+    instrument.attrs['NX_class'] = 'NXinstrument'
+    detector = instrument.create_group('detector')
+    detector.attrs['NX_class'] = 'NXdetector'
+    detector.create_dataset('data', data=np.zeros((N,) + shape), dtype=np.float32)
+    detector.create_dataset('image_key', data=np.zeros(N), dtype=np.int)
+    sample = entry.create_group('sample')
+    sample.attrs['NX_class'] = 'NXsample'
+    sample['name'] = np.array([name], dtype='<S6')
+    sample.create_dataset('rotation_angle', data=angles, dtype=np.float)
+    entry['data'] = h5.SoftLink("/entry1/instrument/detector/data")
+    entry['rotation_angle'] = h5.SoftLink("/entry1/sample/rotation_angle")
+    entry['image_key'] = h5.SoftLink("/entry1/instrument/detector/image_key")
+    return f
+
+
 def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, norm=True, rmramp=True, rmradius=0.5, rmiter=1):
 
     out_phase    = out_path + "/" + prefix + "phase.nxs"
@@ -232,6 +253,61 @@ def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmram
     fo.close()
     log(3, "Saved phase to {}".format(out_phase))
     log(3, "Saved optical density to {}".format(out_odensity))
+
+
+def write_multiple_ptyr_to_nxtomo(file_paths, angles, out_path, prefix="", border=80, norm=True, rmramp=True, rmradius=0.5, rmiter=1):
+
+    out_phase  = out_path + "/" + prefix + "tomo_phase.nxs"
+    out_odens = out_path + "/" + prefix + "tomo_odens.nxs"
+
+    shapes = []
+    nfiles = len(file_paths)
+    for idx in range(nfiles):
+        fread = h5.File(file_paths[idx], 'r')
+        obj_keys = '/content/obj'
+        obj = list(fread[obj_keys].values())[0]
+        sh = obj['data'].shape[1:]
+        if border > 0:
+            sh = (sh[0] - 2*border, sh[1] - 2*border)
+        shapes.append(np.array(sh))
+    log(3, "The tomographic angles range from {} to {} degress".format(angles[0], angles[-1]))
+    shapes = np.array(shapes)
+    full_shape = np.max(shapes[:, 0]), np.max(shapes[:, 1])
+    log(3, "The common full shape of the object is {}".format(full_shape))
+    
+    # Create Nexus files for phase
+    fp = create_nxtomo_file(out_phase, angles, full_shape, nfiles)
+    fo = create_nxtomo_file(out_odens, angles, full_shape, nfiles)
+    
+    ctr = 0
+    for idx in range(nfiles):
+        slow_top = shapes[idx, 0]
+        fast_top = shapes[idx, 1]
+        fread = h5.File(file_paths[idx], 'r')
+        obj_keys = '/content/obj'
+        obj = list(fread[obj_keys].values())[0]
+        O = obj['data'][0].squeeze()
+        if border > 0:
+            O = O[border:-border,border:-border]
+        if rmramp:
+            ny,nx = O.shape
+            XX,YY = np.meshgrid(np.arange(nx) - nx//2, np.arange(ny) - ny//2)
+            W = np.sqrt(XX**2 + YY**2) < (rmradius * (nx+ny) / 4)
+            for i in range(rmiter):
+                O = u.rmphaseramp(O, weight=W)
+        if norm:
+            O *= np.exp(-1j*np.median(np.angle(O)))
+        phase = np.angle(O)
+        odens = -np.log(np.abs(O)**2)
+        if norm:
+            odens -= np.median(odens)
+        fp['entry1/data'][ctr, :slow_top, :fast_top] = phase
+        fo['entry1/data'][ctr, :slow_top, :fast_top] = odens
+        ctr += 1
+    fp.close()
+    fo.close()
+    log(3, "Saved phase to {}".format(out_phase))
+    log(3, "Saved optical density to {}".format(out_odens))
 
 
 def write_propagated_output(output_filename, propagated_projections, probe_x, probe_y, probe, zaxis, obj_x, obj_y, obj):

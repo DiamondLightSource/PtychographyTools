@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+import argparse, os, sys
+import numpy as np
+
+from ptychotools.utils import io, log
+import ptypy.utils as u
+u.verbose.set_level(3)
+
+parser = argparse.ArgumentParser(description="Combining multiple reconstructions of a tomography scan")
+parser.add_argument("scans", type=str, 
+                    help="A two-column .ptypy file with scan numbers and angles.")
+parser.add_argument("path", type=str,
+                    help="The folder location where all the ptypy reconstructions are saved.")
+parser.add_argument("-r", "--ramp", action="store_true",
+                    help="Remove phase ramp in the reconstructions.")
+parser.add_argument("-a", "--rmsupport", type=float, default=0.5,
+                    help="Support for phase ramp removal given as a radius in fractional units, default is 0.5")
+parser.add_argument("-i", "--rmiter", type=int, default=2,
+                    help="Nr. of iterations for phase ramp removal, default is 2 iterations.")
+parser.add_argument("-n", "--norm", action="store_true",
+                    help="Normalise each reconstruction to the median phase/optical density.")
+parser.add_argument("-b", "--border", type=int, default=20,
+                    help="Border to be cropped on each side of the reconstruction. Default is 20 px.")
+args = parser.parse_args()
+
+if not args.scans.endswith(".ptypy"):
+    log(3, "Please provide a .ptypy file.")
+    sys.exit(0)
+
+scans = np.loadtxt(args.scans)
+scan_ids = scans.T[0].astype(int)
+tomo_angles = scans.T[1].astype(float)
+
+fnames = [args.path + "scan_%d/scan_%d.ptyr" %(sid,sid) for sid in scan_ids]
+outpath = args.path + "tomo_scan_%d_%d" %(scan_ids[0], scan_ids[-1])
+prefix = "scan_%d_%d_" %(scan_ids[0], scan_ids[-1])
+try:
+    os.mkdir(outpath)
+    log(3,"Create output folder: {}".format(outpath))
+except FileExistsError:
+    log(3,"Output folder ({}) already exists".format(outpath))
+
+io.write_multiple_ptyr_to_nxtomo(fnames, tomo_angles, outpath, prefix=prefix, border=args.border, 
+                                 rmramp=args.ramp, norm=args.norm, rmradius=args.rmsupport, rmiter=args.rmiter)
