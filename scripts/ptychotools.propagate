@@ -65,7 +65,7 @@ distance = meta.distance
 psize = first_storage_probe._psize[0]
 
 logger.debug('Propagating the beam...')
-propagated_projections, zaxis, yaxis, xaxis = propagate_probe(probe, psize, energy, distance, args.zrange, NPTS=1024)
+propagated_projections, zaxis, yaxis, xaxis = propagate_probe(probe, psize, energy, distance, args.zrange, NPTS=2000)
 logger.debug('Finished propagation...')
 
 logger.debug('Saving out the result...')
