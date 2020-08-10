@@ -1,30 +1,32 @@
 import numpy as np
+import scipy.stats
 import scipy.ndimage.morphology as morph
 try:
     import ptypy.utils as u
 except ImportError:
     print("Could not import ptypy.")
 
-def recons_auto_mask(obj, weight='abs', percent=10, morph_iter=10):
+
+def recons_auto_mask(obj, weight='abs', percent=10, closing=5, erosion=10):
     if weight == 'abs':
         absobj = np.abs(obj)
-        med = np.median(absobj)
+        med = scipy.stats.mode(absobj, axis=None)[0][0]
         low  = med * (1-percent/100.)
         high = med * (1+percent/100.)
         mask = ((absobj > low) & (absobj < high)).astype(np.float)
-        mask = morph.binary_opening(morph.binary_erosion(mask,iterations=morph_iter), iterations=morph_iter)
+        mask = morph.binary_erosion(morph.binary_closing(mask,iterations=closing), iterations=erosion)
     elif weight == 'phase':
         phobj = np.angle(obj)
-        med = np.median(phobj)
+        med = scipy.stats.mode(phobj, axis=None)[0][0]
         low  = med * (1-percent/100.)
         high = med * (1+percent/100.)
         mask = ((phobj > low) & (phobj < high)).astype(np.float)
-        mask = morph.binary_opening(morph.binary_erosion(mask,iterations=morph_iter), iterations=morph_iter)
+        mask = morph.binary_erosion(morph.binary_closing(mask,iterations=closing), iterations=erosion)
     return mask
 
-def recons_auto_correct(obj, weight=None):
+def recons_auto_correct(obj, weight=None, **kwargs):
     if weight is None:
-        mask = recons_auto_mask(obj)
+        mask = recons_auto_mask(obj, **kwargs)
     else:
         mask = weight
     obj = u.rmphaseramp(obj, weight=mask)
