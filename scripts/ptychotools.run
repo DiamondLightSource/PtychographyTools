@@ -117,12 +117,19 @@ else:
     parameters.io.autosave = u.Param(active=False)
     log(3, "Autosave is off. No output will be saved.")
 
-# Replace engine with GPU-accelerated version (only works for DM right now)
+# Replace engine with GPU-accelerated version
 if args.use_gpu:
     for id, engine in parameters.engines.items():
         if engine.name == "DM":
-            engine.name = "DM_pycuda_stream"
-            log(3, "Replacing the DM engine with the gpu-accelerated DM_pycuda_stream")
+            engine.name = "DM_pycuda"
+            log(3, "Replacing the DM engine with the gpu-accelerated DM_pycuda engine")
+        elif engine.name == "ML":
+            engine.name = "ML_pycuda"
+            log(3, "Replacing the ML engine with the gpu-accelerated ML_pycuda engine")
+        elif engine.name == 'DM_glad':
+            from ptychotools.engines import DM_glad_cuda
+            engine.name = 'DM_glad_cuda'
+            log(3, "Replacing the DM engine with the gpu-accelerated DM engine from the GLAD library")
         else:
             log(3, "There is currently no gpu-acclerated version of the %s engine" %engine.name)
             
