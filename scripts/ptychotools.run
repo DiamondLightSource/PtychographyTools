@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import argparse
+import argparse, sys
 
 from ptychotools.utils import io, log, parallel
 from ptychotools.utils import ptypy_parameters as ptypy_params
@@ -127,7 +127,10 @@ if args.use_gpu:
             engine.name = "ML_pycuda"
             log(3, "Replacing the ML engine with the gpu-accelerated ML_pycuda engine")
         elif engine.name == 'DM_glad':
-            from ptychotools.engines import DM_glad_cuda
+            try:
+                from ptychotools.engines import DM_glad_cuda
+            except ImportError:
+                sys.exit("Could not load DM_glad engine, GLAD library not available")
             engine.name = 'DM_glad_cuda'
             log(3, "Replacing the DM engine with the gpu-accelerated DM engine from the GLAD library")
         else:
