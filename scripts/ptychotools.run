@@ -121,7 +121,7 @@ else:
 if args.use_gpu:
     for id, engine in parameters.engines.items():
         if engine.name == "DM":
-            engine.name = "DM_pycuda_streams"
+            engine.name = "DM_pycuda"
             log(3, "Replacing the DM engine with the gpu-accelerated DM_pycuda engine")
         elif engine.name == "ML":
             engine.name = "ML_pycuda"
