@@ -189,6 +189,7 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, no
             O *= np.exp(-1j*np.median(np.angle(O)))
         phase = np.angle(O)
         odensity = -np.log(np.abs(O)**2)
+        odensity[np.isinf(odensity)] = 0
         if norm:
             odensity -= np.median(odensity)
         fp['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = phase
@@ -244,6 +245,7 @@ def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmram
             O *= np.exp(-1j*np.median(np.angle(O)))
         phase = np.angle(O)
         odensity = -np.log(np.abs(O)**2)
+        odensity[np.isinf(odensity)] = 0
         if norm:
             odensity -= np.median(odensity)
         fp['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = phase
