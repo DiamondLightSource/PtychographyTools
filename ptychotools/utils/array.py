@@ -7,7 +7,7 @@ except ImportError:
     print("Could not import ptypy.")
 
 
-def recons_auto_mask(obj, weight='abs', percent=10, closing=5, erosion=10):
+def recons_auto_mask(obj, weight='crop', percent=10, closing=5, erosion=10):
     if weight == 'abs':
         absobj = np.abs(obj)
         med = scipy.stats.mode(absobj, axis=None)[0][0]
@@ -22,6 +22,11 @@ def recons_auto_mask(obj, weight='abs', percent=10, closing=5, erosion=10):
         high = med * (1+percent/100.)
         mask = ((phobj > low) & (phobj < high)).astype(np.float)
         mask = morph.binary_erosion(morph.binary_closing(mask,iterations=closing), iterations=erosion)
+    elif weight == 'crop':
+        cx = int(obj.shape[0] * percent / 100.)
+        cy = int(obj.shape[1] * percent / 100.)
+        mask = np.zeros(obj.shape, dtype=np.bool)
+        mask[cy:-cy,cx:-cx] = True
     return mask
 
 def recons_auto_correct(obj, weight=None, **kwargs):
