@@ -29,7 +29,7 @@ args = parser.parse_args()
 if args.scans.endswith(".ptypy"):
     print(args.scans)
     with open(args.scans) as f:
-        scan_ids = [int(l) for l in f.readlines()]
+        scan_ids = [int(l) for l in f.readlines() if l not in ["\n", "", " "]]
 elif "-" in args.scans:
     start, stop = args.scans.split("-")
     print(start, stop)
