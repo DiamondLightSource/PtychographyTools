@@ -24,6 +24,8 @@ parser.add_argument("-b", "--border", type=int, default=20,
                     help="Border to be cropped on each side of the reconstruction. Default is 20 px.")
 parser.add_argument("-s", "--single", action="store_true",
                     help="Use this option if the reconstructions are stored in a single ptyr file")
+parser.add_argument("-o", "--output", type=str, default=None,
+                    help="Output folder, default is same as path.")
 args = parser.parse_args()
 
 if args.scans.endswith(".ptypy"):
@@ -45,10 +47,14 @@ else:
         fnames = [args.path + "scan_%04d/scan_%04d.ptyr" %(sid,sid) for sid in scan_ids]
     else:
         fnames = [args.path + "scan_%d/scan_%d.ptyr" %(sid,sid) for sid in scan_ids]
-outpath = args.path + "spectro_scan_%d_%d" %(scan_ids[0], scan_ids[-1])
+
+if args.output is None:
+    outpath = args.path + "/spectro_scan_%d_%d" %(scan_ids[0], scan_ids[-1])
+else:
+    outpath = args.output + "/spectro_scan_%d_%d" %(scan_ids[0], scan_ids[-1])
 prefix = "scan_%d_%d_" %(scan_ids[0], scan_ids[-1])
 try:
-    os.mkdir(outpath)
+    os.makedirs(outpath)
     log(3,"Create output folder: {}".format(outpath))
 except FileExistsError:
     log(3,"Output folder ({}) already exists".format(outpath))
