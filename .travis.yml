@@ -1,4 +1,4 @@
-cache: apt
+cache:
 os: linux
 dist: xenial 
 language: python
@@ -25,7 +25,7 @@ script:
   - pip install coveralls
   - echo $PYTHONPATH
   - conda list
-  - python setup.py build # test that the package buikds
+  - python setup.py build # test that the package builds
   - py.test build/lib/test -v --ignore=build/lib/test/script_tests -m "not ptypy" --cov test --cov-report term-missing # now run the tests
 
 after_script:
