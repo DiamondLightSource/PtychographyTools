@@ -16,6 +16,7 @@ usage() {
       echo ":-o: output	folder for the reconstruction (will be created).
                 A sub folder will be made inside of this for each reconstruction."
       echo ":-p: propagate the output over the given zrange. Syntax: ZMIN,ZMAX"
+      echo ":-r: number of repeated reconstructions (for validation)."
 }
 
 PROPAGATE=false
@@ -23,8 +24,9 @@ LINKED=false
 USE_GPU=false
 EXTRA_ARGS=""
 JOB_NAME="ptypy"
+REPEAT=0
 
-while getopts "hlgj:c:i:o:p:" opt; do
+while getopts "hlgj:c:i:o:p:r:" opt; do
   case $opt in
     c )
       CLUSTER_CONFIG_FILE=`readlink -e $OPTARG`;
@@ -51,6 +53,9 @@ while getopts "hlgj:c:i:o:p:" opt; do
     p )
       PROPAGATE=true;
       ZRANGE=$OPTARG
+      ;;
+    r )
+      REPEAT=$OPTARG;
       ;;
     h )
       usage
@@ -129,6 +134,9 @@ else
     module load global/cluster-quiet
     qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
 fi
+
+# Add extra argument for repeated reconstructions (default is 0)
+EXTRA_ARGS="$EXTRA_ARGS -r $REPEAT"
 
 echo "The log files are:"
 echo "scan_number --> log file"
