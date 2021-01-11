@@ -7,10 +7,9 @@ from . import log
 import numpy as np
 import h5py as h5
 
-from ptypy.utils import ortho
-
 try:
     import ptypy.utils as u
+    from ptypy.utils import ortho
 except ImportError:
     print("Could not import ptypy.")
     
