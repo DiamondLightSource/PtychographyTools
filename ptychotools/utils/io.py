@@ -7,6 +7,8 @@ from . import log
 import numpy as np
 import h5py as h5
 
+from ptypy.utils import ortho
+
 try:
     import ptypy.utils as u
 except ImportError:
@@ -147,6 +149,7 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, no
 
     out_phase    = out_path + "/" + prefix + "phase.nxs"
     out_odensity = out_path + "/" + prefix + "optical_density.nxs"
+    out_amplitude = out_path + "/" + prefix + "amplitude.nxs"
 
     shapes = []
     energy = []
@@ -173,6 +176,7 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, no
     # Create Mantis/Nexus files for phase and optical density
     fp = create_nxstxm_file(out_phase, energy, full_shape, nfiles)
     fo = create_nxstxm_file(out_odensity, energy, full_shape, nfiles)
+    fa = create_nxstxm_file(out_amplitude, energy, full_shape, nfiles)
     
     ctr = 0
     for idx in range(nfiles):
@@ -192,18 +196,23 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, no
         odensity[np.isinf(odensity)] = 0
         if norm:
             odensity -= np.median(odensity)
+        amplitude = np.abs(O)
         fp['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = phase
         fo['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = odensity
+        fa['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = amplitude
         ctr += 1
     fp.close()
     fo.close()
+    fa.close()
     log(3, "Saved phase to {}".format(out_phase))
     log(3, "Saved optical density to {}".format(out_odensity))
+    log(3, "Saved amplitude to {}".format(out_amplitude))
 
 def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmramp=True, norm=True, rmradius=0.5, rmiter=1):
 
-    out_phase    = out_path + "/" + prefix + "phase.nxs"
-    out_odensity = out_path + "/" + prefix + "optical_density.nxs"
+    out_phase     = out_path + "/" + prefix + "phase.nxs"
+    out_odensity  = out_path + "/" + prefix + "optical_density.nxs"
+    out_amplitude = out_path + "/" + prefix + "amplitude.nxs"
 
     shapes = []
     energy = []
@@ -229,6 +238,7 @@ def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmram
     # Create Mantis/Nexus files for phase and optical density
     fp = create_nxstxm_file(out_phase, energy, full_shape, len(scan_keys))
     fo = create_nxstxm_file(out_odensity, energy, full_shape, len(scan_keys))
+    fa = create_nxstxm_file(out_amplitude, energy, full_shape, len(scan_keys))
     
     ctr = 0
     for idx in range(len(scan_keys)):
@@ -248,19 +258,26 @@ def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmram
         odensity[np.isinf(odensity)] = 0
         if norm:
             odensity -= np.median(odensity)
+        amplitude = np.abs(O)
         fp['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = phase
         fo['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = odensity
+        fa['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = amplitude
         ctr += 1
     fp.close()
     fo.close()
+    fa.close()
     log(3, "Saved phase to {}".format(out_phase))
     log(3, "Saved optical density to {}".format(out_odensity))
+    log(3, "Saved amplitude to {}".format(out_amplitude))
 
 
-def write_multiple_ptyr_to_nxtomo(file_paths, angles, out_path, prefix="", border=80, norm=True, rmramp=True, rmradius=0.5, rmiter=1):
+def write_multiple_ptyr_to_nxtomo(file_paths, angles, out_path, prefix="", border=80, norm=True, rmramp=True, rmradius=0.5, rmiter=1, save_odens=False, save_complex=False):
 
     out_phase  = out_path + "/" + prefix + "tomo_phase.nxs"
-    out_odens = out_path + "/" + prefix + "tomo_odens.nxs"
+    if save_odens:
+        out_odens  = out_path + "/" + prefix + "tomo_odens.nxs"
+    if save_complex:
+        out_complex = out_path + "/" + prefix + "tomo_complex.nxs"
 
     shapes = []
     nfiles = len(file_paths)
@@ -278,17 +295,22 @@ def write_multiple_ptyr_to_nxtomo(file_paths, angles, out_path, prefix="", borde
     log(3, "The common full shape of the object is {}".format(full_shape))
     
     # Create Nexus files for phase
-    fp = create_nxtomo_file(out_phase, angles, full_shape, nfiles)
-    fo = create_nxtomo_file(out_odens, angles, full_shape, nfiles)
+    fp = create_nxtomo_file(out_phase,   angles, full_shape, nfiles)
+    if save_odens:
+        fo = create_nxtomo_file(out_odens,   angles, full_shape, nfiles)
+    if save_complex:
+        fc = create_nxtomo_file(out_complex, angles, full_shape, nfiles)
     
     ctr = 0
     for idx in range(nfiles):
+        print("Projection %03d/%03d" %(idx, nfiles), end='\r', flush=True)
         slow_top = shapes[idx, 0]
         fast_top = shapes[idx, 1]
         fread = h5.File(file_paths[idx], 'r')
         obj_keys = '/content/obj'
         obj = list(fread[obj_keys].values())[0]
-        O = obj['data'][0].squeeze()
+        e,v  = ortho(obj['data'])
+        O = v[0] # select most dominant orthogonal object mode
         if border > 0:
             O = O[border:-border,border:-border]
         if rmramp:
@@ -304,12 +326,21 @@ def write_multiple_ptyr_to_nxtomo(file_paths, angles, out_path, prefix="", borde
         if norm:
             odens -= np.median(odens)
         fp['entry1/data'][ctr, :slow_top, :fast_top] = phase
-        fo['entry1/data'][ctr, :slow_top, :fast_top] = odens
+        if save_odens:
+            fo['entry1/data'][ctr, :slow_top, :fast_top] = odens
+        if save_complex:
+            fc['entry1/data'][ctr, :slow_top, :fast_top] = O
         ctr += 1
     fp.close()
-    fo.close()
     log(3, "Saved phase to {}".format(out_phase))
-    log(3, "Saved optical density to {}".format(out_odens))
+    if save_odens:
+        fo.close()
+        log(3, "Saved optical density to {}".format(out_odens))
+    if save_complex:
+        fc.close()
+        log(3, "Saved complex object to {}".format(out_complex))
+
+
 
 
 def write_propagated_output(output_filename, propagated_projections, probe_x, probe_y, probe, zaxis, obj_x, obj_y, obj):

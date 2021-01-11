@@ -45,6 +45,8 @@ if args.single:
 else:
     if args.fmt == "04d":
         fnames = [args.path + "scan_%04d/scan_%04d.ptyr" %(sid,sid) for sid in scan_ids]
+    elif args.fmt == "linked":
+        fnames = [args.path + "scan_linked_%d/scan_linked_%d.ptyr" %(sid,sid) for sid in scan_ids]
     else:
         fnames = [args.path + "scan_%d/scan_%d.ptyr" %(sid,sid) for sid in scan_ids]
 
