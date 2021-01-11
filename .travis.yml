@@ -1,4 +1,4 @@
-cache:
+cache: apt
 os: linux
 dist: xenial 
 language: python
