@@ -36,7 +36,7 @@ class PtypyLauncherTest(unittest.TestCase):
                       'total_num_processors': 40,
                       'num_gpus_per_node': 4,
                       'gpu_arch': 'Pascal',
-                      'project': 'ptychography',
+                      'project': 'i08-1',
                       'log_directory': self.working_directory,
                       'single_threaded': 'false'}
         config_path = os.path.join(self.working_directory, 'test_config.txt')
@@ -70,7 +70,7 @@ class PtypyLauncherTest(unittest.TestCase):
                       'total_num_processors': 80,
                       'num_gpus_per_node': 4,
                       'gpu_arch': 'Pascal',
-                      'project': 'ptychography',
+                      'project': 'i08-1',
                       'log_directory': self.working_directory,
                       'single_threaded': 'false'}
         config_path = os.path.join(self.working_directory, 'test_config.txt')
@@ -105,7 +105,7 @@ class PtypyLauncherTest(unittest.TestCase):
                       'total_num_processors': 40,
                       'num_gpus_per_node': 4,
                       'gpu_arch': 'Pascal',
-                      'project': 'ptychography',
+                      'project': 'i08-1',
                       'log_directory': self.working_directory,
                       'single_threaded': 'false'}
         config_path = os.path.join(self.working_directory, 'test_config.txt')
@@ -147,7 +147,7 @@ class PtypyLauncherTest(unittest.TestCase):
                       'total_num_processors': 40,
                       'num_gpus_per_node': 4,
                       'gpu_arch': 'Pascal',
-                      'project': 'ptychography',
+                      'project': 'i08-1',
                       'log_directory': self.working_directory,
                       'single_threaded': 'false'}
         config_path = os.path.join(self.working_directory, 'test_config.txt')
