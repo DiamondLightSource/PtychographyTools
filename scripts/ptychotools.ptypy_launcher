@@ -111,7 +111,7 @@ then
     echo "Using Hamilton"
     module load hamilton-quiet
 #    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH"
-    qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l gpu=$NUM_GPUS_PER_NODE,m_mem_free=$MEMORY_REQUEST -N $JOB_NAME"
+    qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,m_mem_free=$MEMORY_REQUEST -N $JOB_NAME"
 
 else
     if $USE_GPU;
@@ -127,7 +127,7 @@ else
     
     echo "Using the science cluster"
     module load global/cluster-quiet
-    qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
+    qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
 fi
 
 echo "The log files are:"
