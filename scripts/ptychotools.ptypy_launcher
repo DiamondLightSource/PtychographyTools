@@ -103,9 +103,9 @@ then
 	NUM_GPUS_PER_NODE=4;
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
-	MEMORY_REQUEST=90G
+	MEMORY_REQUEST=80G
     else
-	MEMORY_REQUEST=9G # for Hamilton we hardcode 9G per slot	
+	MEMORY_REQUEST=8G # for Hamilton we hardcode 8G per slot	
     fi
 
     echo "Using Hamilton"
