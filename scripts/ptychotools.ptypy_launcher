@@ -117,7 +117,7 @@ then
 else
     if $USE_GPU;
     then
-	TOTAL_NUM_PROCESSORS=2;
+	TOTAL_NUM_PROCESSORS=1;
 	NUM_GPUS_PER_NODE=1;
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
