@@ -127,7 +127,8 @@ else
     
     echo "Using the science cluster"
     module load global/cluster-quiet
-    qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
+    #qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
+    qsub_args="-terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
 fi
 
 echo "The log files are:"
