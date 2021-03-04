@@ -118,10 +118,10 @@ else
     if $USE_GPU;
     then
 	TOTAL_NUM_PROCESSORS=2;
-	NUM_GPUS_PER_NODE=2;
+	NUM_GPUS_PER_NODE=1;
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
-	MEMORY_REQUEST=120G
+	MEMORY_REQUEST=240G
 	EXLUSIVE=""
     else
 	MEMORY_REQUEST=12G # for the science cluster we hardcode 12GB per slot
