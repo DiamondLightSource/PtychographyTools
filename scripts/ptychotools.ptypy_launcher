@@ -174,11 +174,14 @@ else
         touch $LOG_FILE
         chmod +rw $LOG_FILE
 
-        log "I am here:" $LOG_FILE
+        log "PTYPY CLUSTER SUBMISSION LOG" $LOG_FILE
         log "The log file is set to: $LOG_FILE" $LOG_FILE
         log "The cluster config file is set to: $CLUSTER_CONFIG_FILE" $LOG_FILE
         log "The json file is set to: $JSON_FILE" $LOG_FILE
         log "The output folder is set to $OUTPUT_FOLDER" $LOG_FILE
+	log "The project is $PROJECT" $LOG_FILE
+	log "The cluster queue is $CLUSTER_QUEUE" $LOG_FILE
+	log "The memory request is $MEMORY_REQUEST" $LOG_FILE
 
         if $PROPAGATE;
         then
