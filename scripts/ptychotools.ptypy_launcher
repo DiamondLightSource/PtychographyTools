@@ -47,10 +47,11 @@ while getopts "hlgn:j:c:i:o:p:" opt; do
       LINKED=true
       ;;
     g )
-      USE_GPU=true;
+      USE_GPU=true
       ;;
     n )
       NUM_GPU=$OPTARG
+      ;;
     p )
       PROPAGATE=true;
       ZRANGE=$OPTARG
