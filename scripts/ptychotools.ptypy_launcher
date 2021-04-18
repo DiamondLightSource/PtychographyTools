@@ -24,7 +24,7 @@ USE_GPU=false
 EXTRA_ARGS=""
 JOB_NAME="ptypy"
 
-while getopts "hlgj:c:i:o:p:" opt; do
+while getopts "hlg:j:c:i:o:p:" opt; do
   case $opt in
     c )
       CLUSTER_CONFIG_FILE=`readlink -e $OPTARG`;
@@ -46,7 +46,8 @@ while getopts "hlgj:c:i:o:p:" opt; do
       LINKED=true
       ;;
     g )
-      USE_GPU=true
+      USE_GPU=true;
+      NUM_GPU=$OPTARG
       ;;
     p )
       PROPAGATE=true;
@@ -94,13 +95,14 @@ else
     mkdir -p $OUTPUT_FOLDER
 fi
 
+echo "NUM_GPU: $NUM_GPU"
 
 if [ "$CLUSTER_QUEUE" = "HAMILTON" ];
 then
     if $USE_GPU;
     then
-	TOTAL_NUM_PROCESSORS=1;
-	NUM_GPUS_PER_NODE=1;
+	TOTAL_NUM_PROCESSORS=$NUM_GPU;
+	NUM_GPUS_PER_NODE=$NUM_GPU;
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
 	MEMORY_REQUEST=80G
