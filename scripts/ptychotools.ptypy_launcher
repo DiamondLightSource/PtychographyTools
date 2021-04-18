@@ -95,7 +95,6 @@ else
     mkdir -p $OUTPUT_FOLDER
 fi
 
-echo "NUM_GPU: $NUM_GPU"
 
 if [ "$CLUSTER_QUEUE" = "HAMILTON" ];
 then
@@ -198,6 +197,7 @@ else
 	log "The cluster queue is $CLUSTER_QUEUE" $LOG_FILE
         log "The number of requested slots is $TOTAL_NUM_PROCESSORS" $LOG_FILE
 	log "The memory request is $MEMORY_REQUEST per slot" $LOG_FILE
+	log "NUM_GPU: $NUM_GPU" $LOG_FILE
 
         if $PROPAGATE;
         then
