@@ -21,10 +21,11 @@ usage() {
 PROPAGATE=false
 LINKED=false
 USE_GPU=false
+NUM_GPU=1
 EXTRA_ARGS=""
 JOB_NAME="ptypy"
 
-while getopts "hlg:j:c:i:o:p:" opt; do
+while getopts "hlgn:j:c:i:o:p:" opt; do
   case $opt in
     c )
       CLUSTER_CONFIG_FILE=`readlink -e $OPTARG`;
@@ -47,8 +48,9 @@ while getopts "hlg:j:c:i:o:p:" opt; do
       ;;
     g )
       USE_GPU=true;
-      NUM_GPU=$OPTARG
       ;;
+    n )
+      NUM_GPU=$OPTARG
     p )
       PROPAGATE=true;
       ZRANGE=$OPTARG
