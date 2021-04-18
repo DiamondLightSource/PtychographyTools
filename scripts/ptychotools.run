@@ -148,6 +148,13 @@ if args.use_gpu:
                 print("Warning: could not import ML_pycuda engine")
             engine.name = "ML_pycuda"
             log(3, "Replacing the ML engine with the gpu-accelerated ML_pycuda engine")
+        elif (engine.name == "DR_pycuda") or (engine.name == "DR"):
+            try:
+                from ptypy.accelerate.cuda_pycuda.engines import DR_pycuda_stream
+            except ImportError:
+                print("Warning: could not import DR_pycuda_stream engine")
+            engine.name = "DR_pycuda_stream"
+            log(3, "Replacing the DR engine with the gpu-accelerated DR_pycuda engine")
         elif engine.name == 'DM_glad':
             try:
                 from ptychotools.engines import DM_glad_cuda
