@@ -10,9 +10,9 @@ from ptychotools.verbose import logger
 from ptypy.utils import ortho
 
 # Import all pycuda engines
-from ptypy.accelerate.engines import DM_pycuda, DM_pycuda_stream, DM_pycuda_streams
-from ptypy.accelerate.engines import ML_pycuda
-from ptypy.accelerate.engines import DR_pycuda, DR_pycuda_stream
+from ptypy.accelerate.cuda_pycuda.engines import DM_pycuda, DM_pycuda_stream, DM_pycuda_streams
+from ptypy.accelerate.cuda_pycuda.engines import ML_pycuda
+from ptypy.accelerate.cuda_pycuda.engines import DR_pycuda, DR_pycuda_stream
 
 parser = argparse.ArgumentParser(description='Propagates a ptychography reconstruction using nearfield ASM over a given range.')
 
