@@ -98,6 +98,8 @@ if args.plotting:
 else:
     log(3, "Turning the plotting off.")
     parameters.io.autoplot = u.Param(active=False)
+    parameters.io.interaction = u.Param(active=False)
+    parameters.io.interaction.server = u.Param(active=False)
 
 # make sure we aren't randomly writing somewhere if this isn't set.
 if args.output_folder is not None:
