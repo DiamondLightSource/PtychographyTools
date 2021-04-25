@@ -110,7 +110,7 @@ if args.output_folder is not None:
         parameters.io.autosave.active
         parameters.io.autosave.interval
     except (KeyError, AttributeError):
-        parameters.io.autosave = u.Param(active=True, interval=100)
+        parameters.io.autosave = u.Param(active=False, interval=100)
     log(3, "Autosave is {}, with io going in {}, and the final reconstruction into {}".format(parameters.io.autosave.active,
                                                                                               parameters.io.home,
                                                                                               parameters.io.rfile))
