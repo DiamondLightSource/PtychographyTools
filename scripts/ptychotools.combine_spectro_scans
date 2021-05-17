@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import argparse, os, sys
 
-from ptychotools.utils import io, log
+from ptychotools.utils import io, log, plotting
 import ptypy.utils as u
 u.verbose.set_level(3)
 
@@ -26,6 +26,8 @@ parser.add_argument("-s", "--single", action="store_true",
                     help="Use this option if the reconstructions are stored in a single ptyr file")
 parser.add_argument("-o", "--output", type=str, default=None,
                     help="Output folder, default is same as path.")
+parser.add_argument("-m", "--movie", action="store_true",
+                    help="Make a movie of the spectro scan.")
 args = parser.parse_args()
 
 if args.scans.endswith(".ptypy"):
@@ -69,3 +71,6 @@ if args.single:
 else:
     io.write_multiple_ptyr_to_nxstxm(fnames, outpath, prefix=prefix, border=args.border, 
                                      rmramp=args.ramp, norm=args.norm, rmradius=args.rmsupport, rmiter=args.rmiter)
+
+if args.movie:
+    plotting.make_spectro_scan_movie(outpath, prefix)

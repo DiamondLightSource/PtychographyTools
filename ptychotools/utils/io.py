@@ -144,15 +144,17 @@ def create_nxtomo_file(filename, angles, shape, N, name='default'):
     return f
 
 
-def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, norm=True, rmramp=True, rmradius=0.5, rmiter=1):
+def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, norm=True, rescale=True, rmramp=True, rmradius=0.5, rmiter=1):
 
     out_phase    = out_path + "/" + prefix + "phase.nxs"
     out_odensity = out_path + "/" + prefix + "optical_density.nxs"
     out_amplitude = out_path + "/" + prefix + "amplitude.nxs"
+    out_probe_intensity = out_path + "/" + prefix + "probe_intensity.nxs"
 
     shapes = []
     energy = []
     objs   = []
+    prbs   = []
     nfiles = len(file_paths)
     for idx in range(nfiles):
         fread = h5.File(file_paths[idx], 'r')
@@ -166,7 +168,12 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, no
         objs.append(data)
         energy.append(enrg)
         shapes.append(np.array(sh))
+        probe_keys = '/content/probe'
+        probe = list(fread[probe_keys].values())[0]
+        probe_shape = tuple(np.array(probe['data'].shape[1:]))
+        prbs.append(np.abs(probe['data'][0]))
     energy = np.array(energy)*1e3 # convert to eV
+    prb_mean = np.array(prbs).mean(axis=(1,2))
     log(3, "The energy ranges from {} to {} eV".format(energy[0], energy[-1]))
     shapes = np.array(shapes)
     full_shape = np.max(shapes[:, 0]), np.max(shapes[:, 1])
@@ -176,6 +183,7 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, no
     fp = create_nxstxm_file(out_phase, energy, full_shape, nfiles)
     fo = create_nxstxm_file(out_odensity, energy, full_shape, nfiles)
     fa = create_nxstxm_file(out_amplitude, energy, full_shape, nfiles)
+    fi = create_nxstxm_file(out_probe_intensity, energy, probe_shape, nfiles)
     
     ctr = 0
     for idx in range(nfiles):
@@ -191,21 +199,27 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, no
         if norm:
             O *= np.exp(-1j*np.median(np.angle(O)))
         phase = np.angle(O)
+        if rescale:
+            O *= (prb_mean[idx] / prb_mean.mean())
         odensity = -np.log(np.abs(O)**2)
         odensity[np.isinf(odensity)] = 0
         if norm:
             odensity -= np.median(odensity)
         amplitude = np.abs(O)
+        probeint = (prbs[idx] / (prb_mean[idx] / prb_mean.mean()))**2
         fp['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = phase
         fo['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = odensity
         fa['entry1/Counter1/data'][ctr, :slow_top, :fast_top] = amplitude
+        fi['entry1/Counter1/data'][ctr] = probeint
         ctr += 1
     fp.close()
     fo.close()
     fa.close()
+    fi.close()
     log(3, "Saved phase to {}".format(out_phase))
     log(3, "Saved optical density to {}".format(out_odensity))
     log(3, "Saved amplitude to {}".format(out_amplitude))
+    log(3, "Saved probe intensity to {}".format(out_probe_intensity))
 
 def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmramp=True, norm=True, rmradius=0.5, rmiter=1):
 
