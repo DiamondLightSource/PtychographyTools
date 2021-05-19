@@ -31,7 +31,7 @@ def make_spectro_scan_movie(basepath, prefix, radius=0.4):
     
     print("Creating temporary plots")
     for i in range(N):
-        fig = plt.figure(figsize=(15,10), dpi=100)
+        fig = plt.figure(figsize=(16,12), dpi=100)
         axo = fig.add_subplot(231)
         axp = fig.add_subplot(232)
         axi = fig.add_subplot(233)
@@ -39,7 +39,7 @@ def make_spectro_scan_movie(basepath, prefix, radius=0.4):
         ax2 = ax1.twinx()
         axo.axis('off')
         axo.set_title("Optical density (%.1f eV)" %eng[i])
-        axo.imshow(odensity[i], vmin=-1, vmax=1, cmap='gray', interpolation='none')
+        axo.imshow(odensity[i], vmin=-1.5, vmax=1, cmap='gray', interpolation='none')
         axo.add_patch(plt.Circle((ny//2,nx//2),radius *(nx+ny)/4, fill=0, color='tab:blue'))
         axp.axis('off')
         axp.set_title("Phase (%.1f eV)" %eng[i])
@@ -57,8 +57,8 @@ def make_spectro_scan_movie(basepath, prefix, radius=0.4):
         ax1.set_xlabel("Photon energy [eV]")
         ax1.set_ylabel("Opt. density")
         ax2.set_ylabel("Phase")
-        ax1.legend(frameon=0, loc=1)
-        ax2.legend(frameon=0, loc=2)
+        ax1.legend(frameon=0, loc=2)
+        ax2.legend(frameon=0, loc=4)
         fig.savefig(basepath + "/.tmp_%04d.png" %i)
         plt.close(fig)
         
