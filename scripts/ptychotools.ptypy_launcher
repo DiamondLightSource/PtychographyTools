@@ -22,11 +22,12 @@ usage() {
 PROPAGATE=false
 LINKED=false
 USE_GPU=false
+NUM_GPU=1
 EXTRA_ARGS=""
 JOB_NAME="ptypy"
 REPEAT=0
 
-while getopts "hlgj:c:i:o:p:r:" opt; do
+while getopts "hlgn:j:c:i:o:p:r:" opt; do
   case $opt in
     c )
       CLUSTER_CONFIG_FILE=`readlink -e $OPTARG`;
@@ -49,6 +50,9 @@ while getopts "hlgj:c:i:o:p:r:" opt; do
       ;;
     g )
       USE_GPU=true
+      ;;
+    n )
+      NUM_GPU=$OPTARG
       ;;
     p )
       PROPAGATE=true;
@@ -104,35 +108,38 @@ if [ "$CLUSTER_QUEUE" = "HAMILTON" ];
 then
     if $USE_GPU;
     then
-	TOTAL_NUM_PROCESSORS=4;
-	NUM_GPUS_PER_NODE=4;
+	TOTAL_NUM_PROCESSORS=$NUM_GPU;
+	NUM_GPUS_PER_NODE=$NUM_GPU;
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
-	MEMORY_REQUEST=90G
+	MEMORY_REQUEST=80G
+	EXCLUSIVE="exclusive"
     else
-	MEMORY_REQUEST=9G # for Hamilton we hardcode 9G per slot	
+	MEMORY_REQUEST=8G # for Hamilton we hardcode 8G per slot 
+	EXCLUSIVE="exclusive"
     fi
 
     echo "Using Hamilton"
     module load hamilton-quiet
-#    qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH"
-    qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,gpu=$NUM_GPUS_PER_NODE,m_mem_free=$MEMORY_REQUEST -N $JOB_NAME"
+    qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l $EXCLUSIVE,gpu=$NUM_GPUS_PER_NODE,m_mem_free=$MEMORY_REQUEST,gpu_arch=Volta -N $JOB_NAME"
 
 else
     if $USE_GPU;
     then
-	TOTAL_NUM_PROCESSORS=2;
-	NUM_GPUS_PER_NODE=2;
+	TOTAL_NUM_PROCESSORS=1;
+	NUM_GPUS_PER_NODE=1;
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
-	MEMORY_REQUEST=120G
+	MEMORY_REQUEST=240G
+	EXLUSIVE=""
     else
-	MEMORY_REQUEST=12G # for com14 we hardcode 12GB per slot
+	MEMORY_REQUEST=12G # for the science cluster we hardcode 12GB per slot
+	EXCLUSIVE="exclusive"
     fi
     
     echo "Using the science cluster"
     module load global/cluster-quiet
-    qsub_args="-jsv /dls_sw/apps/sge/common/JSVs/savu.pl -terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
+    qsub_args="-terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l $EXCLUSIVE,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
 fi
 
 # Add extra argument for repeated reconstructions (default is 0)
@@ -154,20 +161,30 @@ then
 
     if $PROPAGATE;
     then
+        log "PTYPY CLUSTER SUBMISSION LOG" $LOG_FILE
+        log "The log file is set to: $LOG_FILE" $LOG_FILE
+        log "The cluster config file is set to: $CLUSTER_CONFIG_FILE" $LOG_FILE
+        log "The json file is set to: $JSON_FILE" $LOG_FILE
+        log "The output folder is set to $OUTPUT_FOLDER" $LOG_FILE
+	log "The project is $PROJECT" $LOG_FILE
+	log "The cluster queue is $CLUSTER_QUEUE" $LOG_FILE
+        log "The number of requested slots is $TOTAL_NUM_PROCESSORS" $LOG_FILE
+	log "The memory request is $MEMORY_REQUEST per slot" $LOG_FILE
         log "I'll propagate the result" $LOG_FILE
         jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -q -j $JSON_FILE -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE -i "$IDENTIFIER_LIST" $EXTRA_ARGS`
 
 
     else
+        log "PTYPY CLUSTER SUBMISSION LOG" $LOG_FILE
+        log "The log file is set to: $LOG_FILE" $LOG_FILE
+        log "The cluster config file is set to: $CLUSTER_CONFIG_FILE" $LOG_FILE
+        log "The json file is set to: $JSON_FILE" $LOG_FILE
+        log "The output folder is set to $OUTPUT_FOLDER" $LOG_FILE
+	log "The project is $PROJECT" $LOG_FILE
+	log "The cluster queue is $CLUSTER_QUEUE" $LOG_FILE
+        log "The number of requested slots is $TOTAL_NUM_PROCESSORS" $LOG_FILE
+	log "The memory request is $MEMORY_REQUEST per slot" $LOG_FILE
         log "Not propagating the results" $LOG_FILE
-        log "I am here" $LOG_FILE
-        log "The log file is:$LOG_FILE" $LOG_FILE
-        log "The total number of processors is:$TOTAL_NUM_PROCESSORS" $LOG_FILE
-        log "The output folder is:$OUTPUT_FOLDER" $LOG_FILE
-        log "The json file is is:$JSON_FILE" $LOG_FILE
-        log "The ptycho-tools version is:$PTYCHOTOOLS_VERSION" $LOG_FILE
-        log "The single threaded is:$SINGLE_THREADED" $LOG_FILE
-        log "PROPAGATE IS:$PROPAGATE" $LOG_FILE
         log "identifier list:$IDENTIFIER_LIST" $LOG_FILE
         IDENTIFIER=`echo ${IDENTIFIER_LIST}`
         log "identifier is:$IDENTIFIER" $LOG_FILE
@@ -182,11 +199,15 @@ else
         touch $LOG_FILE
         chmod +rw $LOG_FILE
 
-        log "I am here:" $LOG_FILE
+        log "PTYPY CLUSTER SUBMISSION LOG" $LOG_FILE
         log "The log file is set to: $LOG_FILE" $LOG_FILE
         log "The cluster config file is set to: $CLUSTER_CONFIG_FILE" $LOG_FILE
         log "The json file is set to: $JSON_FILE" $LOG_FILE
         log "The output folder is set to $OUTPUT_FOLDER" $LOG_FILE
+	log "The project is $PROJECT" $LOG_FILE
+	log "The cluster queue is $CLUSTER_QUEUE" $LOG_FILE
+        log "The number of requested slots is $TOTAL_NUM_PROCESSORS" $LOG_FILE
+	log "The memory request is $MEMORY_REQUEST per slot" $LOG_FILE
 
         if $PROPAGATE;
         then

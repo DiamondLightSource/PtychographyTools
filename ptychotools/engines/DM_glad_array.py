@@ -277,7 +277,7 @@ class DM_glad_array(DM):
                                              addr=self.vectorised_scan[dID]['meta']['addr'],
                                              pre_fft=pre_fft,
                                              post_fft=post_fft,
-                                             pbound=self.pbound[dID],
+                                             pbound=self.pbound_scan[_diffs.label],
                                              overlap_max_iterations=self.p.overlap_max_iterations,
                                              update_object_first=self.p.update_object_first,
                                              obj_smooth_std=self.p.obj_smooth_std,

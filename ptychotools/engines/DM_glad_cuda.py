@@ -167,6 +167,7 @@ class DM_glad_cuda(DM_glad_array):
         Compute `num` iterations.
         """
 
+
         for dID, _diffs in self.di.S.items():
 
             cfact_probe = (self.p.probe_inertia * len(self.vectorised_scan[dID]['meta']['addr']) /
@@ -193,7 +194,7 @@ class DM_glad_cuda(DM_glad_array):
                                              addr=self.vectorised_scan[dID]['meta']['addr'],
                                              pre_fft=pre_fft,
                                              post_fft=post_fft,
-                                             pbound=self.pbound[dID],
+                                             pbound=self.pbound_scan[_diffs.label],
                                              overlap_max_iterations=self.p.overlap_max_iterations,
                                              update_object_first=self.p.update_object_first,
                                              obj_smooth_std=self.p.obj_smooth_std,
