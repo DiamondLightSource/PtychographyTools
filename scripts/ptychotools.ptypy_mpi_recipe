@@ -16,12 +16,13 @@ usage() {
       echo ":-g: uses the GPU-accelerated version of ptypy"
       echo ":-p: Propagate the result"
       echo ":-q: Link the reconstructions"
+      echo ":-r: Number of repeated reconstructions (for validation)"
 }
 
 PROPAGATE=false
 EXTRA_ARGS="-P 0"
 
-while getopts "hqs:z:j:i:o:gv:n:p:" opt; do
+while getopts "hqs:z:j:i:o:gv:n:p:r:" opt; do
   case $opt in
     h )
       usage
@@ -59,6 +60,9 @@ while getopts "hqs:z:j:i:o:gv:n:p:" opt; do
       ZRANGE=`echo $OPTARG | tr ',' ' '`;
       ZMIN=${ZRANGE%\ *};
       ZMAX=${ZRANGE#* };
+      ;;
+    r )
+      REPEAT=$OPTARG;
       ;;
     *)
       usage
@@ -131,9 +135,23 @@ else
     HOST_LIST_WITH_CORES=${HOSTLIST//,/:$NUMCORES,} # puts in the number of cores where the comma would be
     HOST_LIST_WITH_CORES=${HOST_LIST_WITH_CORES%?} # gets rid of the trailing comma
     echo "THE HOST LIST WITH CORES IS $HOST_LIST_WITH_CORES" >> $LOG_FILE
-    mpi_params="-np ${TOTAL_NUM_PROCESSORS} --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
-    echo "The mpi params are $mpi_params" >> $LOG_FILE
-    mpirun $mpi_params >> $LOG_FILE
+
+    if (($REPEAT > 0));
+    then
+	for i in $(eval echo "{1..$REPEAT..1}")
+	do
+	    echo "This is reconstruction $i of a total of $REPEAT" >> $LOG_FILE
+	    ii=$(printf "%03d" $i)
+	    echo "$ii" >> $LOG_FILE
+	    mpi_params="-np ${TOTAL_NUM_PROCESSORS} --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER/$ii $EXTRA_ARGS"
+	    echo "The mpi params are $mpi_params" >> $LOG_FILE
+	    mpirun $mpi_params >> $LOG_FILE
+	done
+    else
+	mpi_params="-np ${TOTAL_NUM_PROCESSORS} --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
+	echo "The mpi params are $mpi_params" >> $LOG_FILE
+	mpirun $mpi_params >> $LOG_FILE
+    fi
 
     if $PROPAGATE;
     then
