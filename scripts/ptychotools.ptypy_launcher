@@ -115,7 +115,7 @@ then
     fi
 
     echo "Using Hamilton"
-    module load hamilton-quiet
+    module load hamilton
     qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l $EXCLUSIVE,gpu=$NUM_GPUS_PER_NODE,m_mem_free=$MEMORY_REQUEST,gpu_arch=Volta -N $JOB_NAME"
 
 else
@@ -133,7 +133,7 @@ else
     fi
     
     echo "Using the science cluster"
-    module load global/cluster-quiet
+    module load global/cluster
     qsub_args="-terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l $EXCLUSIVE,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
 fi
 
