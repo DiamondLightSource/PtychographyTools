@@ -121,8 +121,7 @@ then
     fi
 
     echo "Using Hamilton"
-    module load hamilton
-
+    module load hamilton-quiet
 
 else
     if $USE_GPU;
