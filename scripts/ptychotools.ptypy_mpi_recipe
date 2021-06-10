@@ -129,16 +129,21 @@ then
     fi
 else
     HOSTLIST=$(cat ${PE_HOSTFILE} | awk '{print $1}' | tr "\n" ",") # comma separated list of hosts
-    echo "THE HOSTLIST IS $HOSTLIST" >> $LOG_FILE
-    #NUMCORES=$(cat ${PE_HOSTFILE} | awk 'NR==1{print $2}')
+    #HOSTLIST_WITH_CORES=$(cat ${PE_HOSTFILE} | awk '{print $1,$2}' | tr "\n" ",") 
+    echo "The hostlist is $HOSTLIST" >> $LOG_FILE
+    #GETCORES=$(cat ${PE_HOSTFILE} | awk 'NR==1{print $2}')
     NUMCORES=$NUM_PROCS_PER_NODE
-    echo "THE number of cores per node is $NUMCORES" >> $LOG_FILE
+    echo "The number of cores per node is $NUMCORES" >> $LOG_FILE
     NUMNODES=$(echo $HOSTLIST | tr "-cd" "," | wc -c)
     echo "The number of nodes is $NUMNODES" >> $LOG_FILE
     NUM_PROCS=$(( NUMNODES * NUMCORES ))
+    #HOSTLIST_WITH_CORES=${HOSTLIST_WITH_CORES// /:} 
+    #HOSTLIST_WITH_CORES=${HOSTLIST_WITH_CORES%?} # gets rid of the trailing comma
+    #echo "THE HOST LIST WITH CORES IS $HOSTLIST_WITH_CORES" >> $LOG_FILE
     HOST_LIST_WITH_CORES=${HOSTLIST//,/:$NUMCORES,} # puts in the number of cores where the comma would be
     HOST_LIST_WITH_CORES=${HOST_LIST_WITH_CORES%?} # gets rid of the trailing comma
     echo "THE HOST LIST WITH CORES IS $HOST_LIST_WITH_CORES" >> $LOG_FILE
+    mpi_proc_cmd="-N ${NUM_PROCS_PER_NODE}"
     
     if (($REPEAT > 0));
     then
@@ -147,12 +152,12 @@ else
 	    echo "This is reconstruction $i of a total of $REPEAT" >> $LOG_FILE
 	    ii=$(printf "%03d" $i)
 	    echo "$ii" >> $LOG_FILE
-	    mpi_params="-N ${NUM_PROCS_PER_NODE} -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER/$ii $EXTRA_ARGS"
+	    mpi_params="$mpi_proc_cmd -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER/$ii $EXTRA_ARGS"
 	    echo "The mpi params are $mpi_params" >> $LOG_FILE
 	    mpirun $mpi_params >> $LOG_FILE
 	done
     else
-	mpi_params="-N ${NUM_PROCS_PER_NODE} -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
+	mpi_params="$mpi_proc_cmd -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
 	echo "The mpi params are $mpi_params" >> $LOG_FILE
 	mpirun $mpi_params >> $LOG_FILE
     fi
