@@ -113,7 +113,7 @@ then
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
 	MEMORY_REQUEST=8G
-	qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l gpu=$NUM_PROCS_PER_NODE,m_mem_free=$MEMORY_REQUEST,gpu_arch=Volta -N $JOB_NAME"
+	qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l gpu=$NUM_PROCS_PER_NODE,m_mem_free=$MEMORY_REQUEST,gpu_arch=$GPU_ARCH -N $JOB_NAME"
     else
 	MEMORY_REQUEST=8G # for Hamilton we hardcode 8G per slot 
 	NUM_PROCS_PER_NODE=$(( 40 < TOTAL_NUM_PROCESSORS ? 40 : TOTAL_NUM_PROCESSORS )); # can be maximum 40
