@@ -152,7 +152,7 @@ else
 	    mpirun $mpi_params >> $LOG_FILE
 	done
     else
-	mpi_params="-N ${NUM_PROCS_PER_NODE} -mca btl_tcp_if_exclude lo,docker0 -x PTYPY_USE_MPI=1 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
+	mpi_params="-N ${NUM_PROCS_PER_NODE} -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
 	echo "The mpi params are $mpi_params" >> $LOG_FILE
 	mpirun $mpi_params >> $LOG_FILE
     fi
