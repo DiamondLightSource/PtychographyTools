@@ -108,38 +108,38 @@ if [ "$CLUSTER_QUEUE" = "HAMILTON" ];
 then
     if $USE_GPU;
     then
-	TOTAL_NUM_PROCESSORS=$NUM_GPU;
-	NUM_GPUS_PER_NODE=$NUM_GPU;
+	TOTAL_NUM_PROCESSORS=$(( NUM_GPU * 10 ));
+	NUM_PROCS_PER_NODE=$(( 4 < NUM_GPU ? 4 : NUM_GPU )); # can be maximum 4 
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
-	MEMORY_REQUEST=80G
-	EXCLUSIVE="exclusive"
+	MEMORY_REQUEST=8G
+	qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l gpu=$NUM_PROCS_PER_NODE,m_mem_free=$MEMORY_REQUEST,gpu_arch=$GPU_ARCH -N $JOB_NAME"
     else
 	MEMORY_REQUEST=8G # for Hamilton we hardcode 8G per slot 
-	EXCLUSIVE="exclusive"
+	NUM_PROCS_PER_NODE=$(( 40 < TOTAL_NUM_PROCESSORS ? 40 : TOTAL_NUM_PROCESSORS )); # can be maximum 40
+	qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,m_mem_free=$MEMORY_REQUEST -N $JOB_NAME"
     fi
 
     echo "Using Hamilton"
     module load hamilton-quiet
-    qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l $EXCLUSIVE,gpu=$NUM_GPUS_PER_NODE,m_mem_free=$MEMORY_REQUEST,gpu_arch=Volta -N $JOB_NAME"
 
 else
     if $USE_GPU;
     then
-	TOTAL_NUM_PROCESSORS=1;
-	NUM_GPUS_PER_NODE=1;
+	TOTAL_NUM_PROCESSORS=$(( NUM_GPU * 10 ));
+	NUM_PROCS_PER_NODE=$(( 2 < NUM_GPU ? 2 : NUM_GPU )); # can be maximum 2
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
-	MEMORY_REQUEST=240G
-	EXLUSIVE=""
+	MEMORY_REQUEST=12G
+	qsub_args="-terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l infiniband,gpu=$NUM_PROCS_PER_NODE,gpu_arch=$GPU_ARCH,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
     else
 	MEMORY_REQUEST=12G # for the science cluster we hardcode 12GB per slot
-	EXCLUSIVE="exclusive"
+	NUM_PROCS_PER_NODE=$(( 20 < TOTAL_NUM_PROCESSORS ? 20 : TOTAL_NUM_PROCESSORS )); # can be maximum 20
+	qsub_args="-terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
     fi
     
     echo "Using the science cluster"
-    module load global/cluster
-    qsub_args="-terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l $EXCLUSIVE,infiniband,gpu=$NUM_GPUS_PER_NODE,gpu_arch=$GPU_ARCH,,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
+    module load global/cluster-quiet
 fi
 
 # Add extra argument for repeated reconstructions (default is 0)
@@ -168,10 +168,11 @@ then
         log "The output folder is set to $OUTPUT_FOLDER" $LOG_FILE
 	log "The project is $PROJECT" $LOG_FILE
 	log "The cluster queue is $CLUSTER_QUEUE" $LOG_FILE
-        log "The number of requested slots is $TOTAL_NUM_PROCESSORS" $LOG_FILE
+        log "The number of requested slots is $TOTAL_NUM_PROCESSORS" $LOG_FIL
+        log "The number of processors per node is $NUM_PROCS_PER_NODE" $LOG_FILE
 	log "The memory request is $MEMORY_REQUEST per slot" $LOG_FILE
         log "I'll propagate the result" $LOG_FILE
-        jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -q -j $JSON_FILE -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE -i "$IDENTIFIER_LIST" $EXTRA_ARGS`
+        jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -q -j $JSON_FILE -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $NUM_PROCS_PER_NODE -s $SINGLE_THREADED -z $LOG_FILE -p $ZRANGE -i "$IDENTIFIER_LIST" $EXTRA_ARGS`
 
 
     else
@@ -183,12 +184,13 @@ then
 	log "The project is $PROJECT" $LOG_FILE
 	log "The cluster queue is $CLUSTER_QUEUE" $LOG_FILE
         log "The number of requested slots is $TOTAL_NUM_PROCESSORS" $LOG_FILE
+        log "The number of processors per node is $NUM_PROCS_PER_NODE" $LOG_FILE
 	log "The memory request is $MEMORY_REQUEST per slot" $LOG_FILE
         log "Not propagating the results" $LOG_FILE
         log "identifier list:$IDENTIFIER_LIST" $LOG_FILE
         IDENTIFIER=`echo ${IDENTIFIER_LIST}`
         log "identifier is:$IDENTIFIER" $LOG_FILE
-        jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i "$IDENTIFIER" -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE -q $EXTRA_ARGS`
+        jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i "$IDENTIFIER" -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $NUM_PROCS_PER_NODE -s $SINGLE_THREADED -z $LOG_FILE -q $EXTRA_ARGS`
 
     fi
     echo "$1 (linked submission) --> $LOG_FILE / jobid:${jid}"
@@ -207,17 +209,18 @@ else
 	log "The project is $PROJECT" $LOG_FILE
 	log "The cluster queue is $CLUSTER_QUEUE" $LOG_FILE
         log "The number of requested slots is $TOTAL_NUM_PROCESSORS" $LOG_FILE
+        log "The number of processors per node is $NUM_PROCS_PER_NODE" $LOG_FILE
 	log "The memory request is $MEMORY_REQUEST per slot" $LOG_FILE
 
         if $PROPAGATE;
         then
             log "I'll propagate the result" $LOG_FILE
-            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE $EXTRA_ARGS -p $ZRANGE`
+            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $NUM_PROCS_PER_NODE -s $SINGLE_THREADED -z $LOG_FILE $EXTRA_ARGS -p $ZRANGE`
 
 
         else
             log "Not propagating the results" $LOG_FILE
-            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $TOTAL_NUM_PROCESSORS -s $SINGLE_THREADED -z $LOG_FILE $EXTRA_ARGS`
+            jid=`qsub ${qsub_args} -P $PROJECT -o $LOG_FILE -e $LOG_FILE $SCRIPT_PATH/ptychotools.ptypy_mpi_recipe -j $JSON_FILE -i $IDENTIFIER -o $OUTPUT_FOLDER -v $PTYCHOTOOLS_VERSION -n $NUM_PROCS_PER_NODE -s $SINGLE_THREADED -z $LOG_FILE $EXTRA_ARGS`
         fi
         echo "$IDENTIFIER --> $LOG_FILE / jobid:${jid}"
     done

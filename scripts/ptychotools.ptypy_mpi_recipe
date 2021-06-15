@@ -12,7 +12,7 @@ usage() {
       echo ":-i: identifier/scan_number."
       echo ":-o: output folder for the reconstruction (will be created)."
       echo ":-v: ptypy version to use"
-      echo ":-n: total number of CPU processors"
+      echo ":-n: Number of CPU processors per node"
       echo ":-g: uses the GPU-accelerated version of ptypy"
       echo ":-p: Propagate the result"
       echo ":-q: Link the reconstructions"
@@ -53,7 +53,7 @@ while getopts "hqs:z:j:i:o:gv:n:p:r:" opt; do
       PTYPY_VERSION=$OPTARG;
       ;;
     n )
-      TOTAL_NUM_PROCESSORS=$OPTARG;
+      NUM_PROCS_PER_NODE=$OPTARG;
       ;;
     p )
       PROPAGATE=true;
@@ -99,12 +99,12 @@ else
     log "The identifier is set to: $IDENTIFIER" $LOG_FILE
 fi
 
-if [ -z ${TOTAL_NUM_PROCESSORS+x} ];
+if [ -z ${NUM_PROCS_PER_NODE+x} ];
 then
     log "You need to pass the number of processors" $LOG_FILE
     exit 1
 else
-    log "The number of processors are $TOTAL_NUM_PROCESSORS" $LOG_FILE
+    log "The number of processors per node are $NUM_PROCS_PER_NODE" $LOG_FILE
 fi
 
 if [ -z ${OUTPUT_FOLDER+x} ];
@@ -129,13 +129,22 @@ then
     fi
 else
     HOSTLIST=$(cat ${PE_HOSTFILE} | awk '{print $1}' | tr "\n" ",") # comma separated list of hosts
-    echo "THE HOSTLIST IS $HOSTLIST" >> $LOG_FILE
-    NUMCORES=$(cat ${PE_HOSTFILE} | awk 'NR==1{print $2}') # to be overridden soon, but is just the number of cores per host
-    echo "THE number of cores per node is $NUMCORES" >> $LOG_FILE
+    #HOSTLIST_WITH_CORES=$(cat ${PE_HOSTFILE} | awk '{print $1,$2}' | tr "\n" ",") 
+    echo "The hostlist is $HOSTLIST" >> $LOG_FILE
+    #GETCORES=$(cat ${PE_HOSTFILE} | awk 'NR==1{print $2}')
+    NUMCORES=$NUM_PROCS_PER_NODE
+    echo "The number of cores per node is $NUMCORES" >> $LOG_FILE
+    NUMNODES=$(echo $HOSTLIST | tr "-cd" "," | wc -c)
+    echo "The number of nodes is $NUMNODES" >> $LOG_FILE
+    NUM_PROCS=$(( NUMNODES * NUMCORES ))
+    #HOSTLIST_WITH_CORES=${HOSTLIST_WITH_CORES// /:} 
+    #HOSTLIST_WITH_CORES=${HOSTLIST_WITH_CORES%?} # gets rid of the trailing comma
+    #echo "THE HOST LIST WITH CORES IS $HOSTLIST_WITH_CORES" >> $LOG_FILE
     HOST_LIST_WITH_CORES=${HOSTLIST//,/:$NUMCORES,} # puts in the number of cores where the comma would be
     HOST_LIST_WITH_CORES=${HOST_LIST_WITH_CORES%?} # gets rid of the trailing comma
     echo "THE HOST LIST WITH CORES IS $HOST_LIST_WITH_CORES" >> $LOG_FILE
-
+    mpi_proc_cmd="-N ${NUM_PROCS_PER_NODE}"
+    
     if (($REPEAT > 0));
     then
 	for i in $(eval echo "{1..$REPEAT..1}")
@@ -143,12 +152,12 @@ else
 	    echo "This is reconstruction $i of a total of $REPEAT" >> $LOG_FILE
 	    ii=$(printf "%03d" $i)
 	    echo "$ii" >> $LOG_FILE
-	    mpi_params="-np ${TOTAL_NUM_PROCESSORS} --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER/$ii $EXTRA_ARGS"
+	    mpi_params="$mpi_proc_cmd -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER/$ii $EXTRA_ARGS"
 	    echo "The mpi params are $mpi_params" >> $LOG_FILE
 	    mpirun $mpi_params >> $LOG_FILE
 	done
     else
-	mpi_params="-np ${TOTAL_NUM_PROCESSORS} --host ${HOST_LIST_WITH_CORES} -x LD_LIBRARY_PATH -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
+	mpi_params="$mpi_proc_cmd -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
 	echo "The mpi params are $mpi_params" >> $LOG_FILE
 	mpirun $mpi_params >> $LOG_FILE
     fi

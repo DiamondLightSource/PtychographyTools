@@ -24,7 +24,7 @@ class PtypyLauncherTest(unittest.TestCase):
     def setUp(self):
         self.working_directory = tempfile.mkdtemp(prefix='run_test')
         build_path = os.path.dirname(os.path.abspath(__file__)).split('lib')[0]
-        self.launcher_script = os.path.join(build_path, "scripts-3.7/ptychotools.ptypy_launcher")
+        self.launcher_script = os.path.join(build_path, "scripts-3.9/ptychotools.ptypy_launcher")
         self.resources = tu.get_moonflower_info()
 
     # def tearDown(self):

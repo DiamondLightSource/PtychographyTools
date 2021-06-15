@@ -23,7 +23,7 @@ class PropagateTest(unittest.TestCase):
     def setUp(self):
         self.working_directory = tempfile.mkdtemp(prefix='run_test')
         build_path = os.path.dirname(os.path.abspath(__file__)).split('lib')[0]
-        self.propagate = os.path.join(build_path, "scripts-3.7/ptychotools.propagate")
+        self.propagate = os.path.join(build_path, "scripts-3.9/ptychotools.propagate")
         print("working directory: %s" % self.working_directory)
 
     def tearDown(self):
