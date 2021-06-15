@@ -14,6 +14,9 @@ from ptypy.accelerate.cuda_pycuda.engines import DM_pycuda, DM_pycuda_stream, DM
 from ptypy.accelerate.cuda_pycuda.engines import ML_pycuda
 from ptypy.accelerate.cuda_pycuda.engines import DR_pycuda, DR_pycuda_stream
 
+# Import the HDF5 Loader
+from ptypy.experiment.hdf5_loader import Hdf5Loader
+
 parser = argparse.ArgumentParser(description='Propagates a ptychography reconstruction using nearfield ASM over a given range.')
 
 
