@@ -12,7 +12,7 @@ package_list = setuptools.find_packages(exclude=['*scripts*'])
 setup(
     name='PtychoTools',
     version='latest',
-    author='Aaron Parsons',
+    author='Aaron Parsons and Benedikt Daurer',
     description='Wrappers for the ptypy framework',
     package_dir={'ptychotools': 'ptychotools'},
     packages=package_list,
