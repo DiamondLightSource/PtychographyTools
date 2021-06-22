@@ -1,0 +1,125 @@
+#!/usr/bin/env python
+
+"""
+A wrapper for DAWN pre-processing of ptychography data
+"""
+
+import os
+import sys
+import json
+import h5py
+import argparse
+import subprocess
+import numpy as np
+
+parser = argparse.ArgumentParser(prog="ptychotools.dawn_processing", description="A wrapper for DAWN pre-processing of ptychography data")
+parser.add_argument("dawnexec", type=str, help="DAWN executable")
+parser.add_argument("bean", type=str, help="DAWN processing bean")
+parser.add_argument("--posx", type=str, dest="posx",
+                    help="Key to X motor position (readback values)")
+parser.add_argument("--posy", type=str, dest="posy",
+                    help="Key to Y motor position (readback values)")
+parser.add_argument("--posx-set", type=str, dest="posx_set",
+                    help="Key to X motor position (set values)")
+parser.add_argument("--posy-set", type=str, dest="posy_set",
+                    help="Key to Y motor position (set values)")
+parser.add_argument("-s", "--shape-check", dest="shape", type=bool,
+                    help="Check if diffraction data and motor positions match in shape") 
+parser.add_argument("-m", "--multi-trigger-check", dest="multi", type=bool,
+                    help="Check if there are mutliple readback motor positions per set motor position")
+parser.add_argument("-t", "--topup-check", dest="topup", type=bool, 
+                    help="Check if the scan went through the top-up and fix the data")
+args = parser.parse_args()
+
+# Parse processing bean
+with open(args.bean, "r") as f:
+    config = json.load(f)
+
+# If the target already exists, there is nothing to do
+run_dawn = True
+if (os.path.isfile(config["outputFilePath"])):
+    #sys.exit("Nothing to do here, a processed file already exists: ", config["filePath"])
+    run_dawn = False
+
+# Execute DAWN processing pipeline
+if run_dawn:
+    subprocess.run([args.dawnexec, "-path", args.bean,">stdout", "2>stderr"])
+print("DAWN processing finished.")
+
+# Check if motor positions have been provided
+if (args.posx is None) and (args.posy is None):
+    sys.exit("No key to motor positions (readback values) provided, will terminate processing here")
+if (args.posx_set is None) and (args.posy_set is None):
+    sys.exit("No key to motor positions (set values) provided, will terminate processing here")
+print("Motor positions provide, continue with corrections...")
+
+# Parse motor positions
+with h5py.File(config["outputFilePath"], "r") as f:
+    posx = f[args.posx][:].squeeze()
+    posy = f[args.posy][:].squeeze()
+    posx_set = f[args.posx_set][:].squeeze()
+    posy_set = f[args.posy_set][:].squeeze()
+posx_original = np.copy(posx)
+posy_original = np.copy(posy)
+print("Readback and set values loaded.")
+
+# Make sure that readback values include leading dimension
+if config["scanRank"] == 1:
+    posx = posx.reshape(1,-1)
+    posy = posy.reshape(1,-1)
+print("Readback shape is ", posx.shape)
+
+# Calculate origin
+origin_x = posx_set[0]
+origin_y = posy_set[0]
+print("Origin of set values is (x,y) = (%f,%f)" %(origin_x,origin_y))
+
+# Detect type of scan
+is_mapped_arb    = (posx.ndim == 2) and (posy.ndim == 2)
+is_mapped_raster = (posx.ndim == 3) and (posy.ndim == 3)
+if not (is_mapped_arb or is_mapped_raster):
+    sys.exit("Could not detect layout of motor positions, will terminate here")
+print("A scan type has been detected (arb=%d, raster=%d)" %(int(is_mapped_arb),int(is_mapped_raster)))
+
+# Synchronise readback/set values
+if is_mapped_arb:
+    posx -= (posx[0,0] - origin_x)
+    posy -= (posy[0,0] - origin_y)
+if is_mapped_raster:
+    posx -= (posx[0,0,0] - origin_x)
+    posy -= (posy[0,0,0] - origin_y)
+print("Readback values have been synchronised to match set values")
+
+# Check if the readback have been triggered multiple times
+if args.multi and is_mapped_arb:
+    ratio_x = posx.shape[1] // len(posx_set)
+    if ratio_x > 1:
+        posx = posx[:,::ratio_x]
+        print("The readback values (x) have been triggered multiple times, should be fixed now")
+    ratio_y = posy.shape[1] // len(posy_set)
+    if ratio_y > 1:
+        posy = posy[:,::ratio_y]
+        print("The readback values (y) have been triggered multiple times, should be fixed now")
+
+# Check if diffraction data and motor positions match in shape
+with h5py.File(config["outputFilePath"], "r") as f:
+    nr_data_frames = f[config["datasetPath"]].shape[0]
+if args.shape and is_mapped_arb:
+    if (nr_data_frames < posx.shape[1]):
+        posx = posx[:,:nr_data_frames]
+        print("There was a shape mismatch between the data and the readback values (x), should be fixed now")
+    if (nr_data_frames < posy.shape[1]):
+        posy = posy[:,:nr_data_frames]
+        print("There was a shape mismatch between the data and the readback values (y), should be fixed now")
+    
+# Store processed motor positions
+with h5py.File(config["outputFilePath"], "r+") as f:
+    try:
+        del f["processed/result/posx"]
+        del f["processed/result/posy"]
+    except:
+        pass
+    f["processed/result/posx"] = posx.squeeze()
+    f["processed/result/posy"] = posy.squeeze()
+        
+
