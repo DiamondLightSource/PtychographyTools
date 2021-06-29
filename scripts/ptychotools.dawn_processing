@@ -103,7 +103,7 @@ if args.multi and is_mapped_arb:
 
 # Check if diffraction data and motor positions match in shape
 with h5py.File(config["outputFilePath"], "r") as f:
-    nr_data_frames = f[config["datasetPath"]].shape[0]
+    nr_data_frames = f[config["datasetPath"]].shape[config["scanRank"]-1]
 if args.shape and is_mapped_arb:
     if (nr_data_frames < posx.shape[1]):
         posx = posx[:,:nr_data_frames]

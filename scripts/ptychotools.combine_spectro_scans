@@ -73,4 +73,4 @@ else:
                                      rmramp=args.ramp, norm=args.norm, rmradius=args.rmsupport, rmiter=args.rmiter)
 
 if args.movie:
-    plotting.make_spectro_scan_movie(outpath, prefix)
+    plotting.make_spectro_scan_movie(outpath, prefix, radius=0.2)
