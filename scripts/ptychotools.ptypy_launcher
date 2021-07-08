@@ -26,8 +26,9 @@ NUM_GPU=1
 EXTRA_ARGS=""
 JOB_NAME="ptypy"
 REPEAT=0
+USE_TERSE=true
 
-while getopts "hlgn:j:c:i:o:p:r:" opt; do
+while getopts "hlgvn:j:c:i:o:p:r:" opt; do
   case $opt in
     c )
       CLUSTER_CONFIG_FILE=`readlink -e $OPTARG`;
@@ -50,6 +51,9 @@ while getopts "hlgn:j:c:i:o:p:r:" opt; do
       ;;
     g )
       USE_GPU=true
+      ;;
+    v )
+      USE_TERSE=false
       ;;
     n )
       NUM_GPU=$OPTARG
@@ -113,11 +117,11 @@ then
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
 	MEMORY_REQUEST=8G
-	qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l gpu=$NUM_PROCS_PER_NODE,m_mem_free=$MEMORY_REQUEST,gpu_arch=$GPU_ARCH -N $JOB_NAME"
+	qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l gpu=$NUM_PROCS_PER_NODE,m_mem_free=$MEMORY_REQUEST,gpu_arch=$GPU_ARCH -N $JOB_NAME"
     else
 	MEMORY_REQUEST=8G # for Hamilton we hardcode 8G per slot 
 	NUM_PROCS_PER_NODE=$(( 40 < TOTAL_NUM_PROCESSORS ? 40 : TOTAL_NUM_PROCESSORS )); # can be maximum 40
-	qsub_args="-terse -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,m_mem_free=$MEMORY_REQUEST -N $JOB_NAME"
+	qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,m_mem_free=$MEMORY_REQUEST -N $JOB_NAME"
     fi
 
     echo "Using Hamilton"
@@ -131,15 +135,23 @@ else
 	EXTRA_ARGS="$EXTRA_ARGS -g"
 	JOB_NAME="ptypy_gpu"
 	MEMORY_REQUEST=12G
-	qsub_args="-terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l infiniband,gpu=$NUM_PROCS_PER_NODE,gpu_arch=$GPU_ARCH,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
+	qsub_args="-j y -pe openmpi $TOTAL_NUM_PROCESSORS -l infiniband,gpu=$NUM_PROCS_PER_NODE,gpu_arch=$GPU_ARCH,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
     else
 	MEMORY_REQUEST=12G # for the science cluster we hardcode 12GB per slot
 	NUM_PROCS_PER_NODE=$(( 20 < TOTAL_NUM_PROCESSORS ? 20 : TOTAL_NUM_PROCESSORS )); # can be maximum 20
-	qsub_args="-terse -j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
+	qsub_args="-j y -pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,infiniband,m_mem_free=$MEMORY_REQUEST -q $CLUSTER_QUEUE -N $JOB_NAME"
     fi
     
     echo "Using the science cluster"
     module load global/cluster-quiet
+fi
+
+# Add -terse flag to only show jobid in output
+if $USE_TERSE;
+then
+    qsub_args="-terse $qsub_args"
+else
+    qsub_args="$qsub_args"
 fi
 
 # Add extra argument for repeated reconstructions (default is 0)
