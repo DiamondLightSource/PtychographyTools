@@ -172,7 +172,7 @@ def write_multiple_ptyr_to_nxstxm(file_paths, out_path, prefix="", border=80, no
         probe_keys = '/content/probe'
         probe = list(fread[probe_keys].values())[0]
         probe_shape = tuple(np.array(probe['data'].shape[1:]))
-        prbs.append(np.abs(probe['data'][0]))
+        prbs.append(np.abs(ortho(probe['data'][:])[1][0]))
     energy = np.array(energy)*1e3 # convert to eV
     prb_int_mean = (np.array(prbs)**2).mean(axis=(1,2))
     #print("Probe amplitude means", prb_mean)
