@@ -63,10 +63,13 @@ posx_original = np.copy(posx)
 posy_original = np.copy(posy)
 print("Readback and set values loaded.")
 
+# Scan rank
+print("The scan rank is ", config["scanRank"])
+
 # Make sure that readback values include leading dimension
 if config["scanRank"] == 1:
-    posx = posx.reshape(1,-1)
-    posy = posy.reshape(1,-1)
+    posx = np.expand_dims(posx, axis=0)
+    posy = np.expand_dims(posy, axis=0)
 print("Readback shape is ", posx.shape)
 
 # Calculate origin
