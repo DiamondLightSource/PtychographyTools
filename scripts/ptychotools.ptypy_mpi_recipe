@@ -22,7 +22,7 @@ usage() {
 PROPAGATE=false
 EXTRA_ARGS="-P 0"
 
-while getopts "hqs:z:j:i:o:gv:n:p:r:" opt; do
+while getopts "hqs:z:j:i:o:gv:n:p:r:V:" opt; do
   case $opt in
     h )
       usage
@@ -63,6 +63,10 @@ while getopts "hqs:z:j:i:o:gv:n:p:r:" opt; do
       ;;
     r )
       REPEAT=$OPTARG;
+      ;;
+    V )
+      VISIT=$OPTARG;
+      EXTRA_ARGS="$EXTRA_ARGS -V $VISIT";
       ;;
     *)
       usage

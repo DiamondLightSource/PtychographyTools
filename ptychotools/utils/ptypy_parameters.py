@@ -52,6 +52,7 @@ def paramtree_from_yaml(yaml_file):
     '''
     in_dict = yaml.load(open(yaml_file), Loader=yaml.FullLoader)
     parameters_to_run = u.Param()
+    visit_path = None
     if in_dict['base_file'] is not None:
         logging.debug("Basing this scan off of the scan in {}".format(in_dict['base_file']))
         previous_scan = Ptycho.load_run(in_dict['base_file'], False)  # load in the run but without the data
@@ -59,7 +60,9 @@ def paramtree_from_yaml(yaml_file):
         parameters_to_run.update(previous_parameters)
     if in_dict['parameter_tree'] is not None:
         parameters_to_run.update(in_dict['parameter_tree'], Convert=True)
-    return parameters_to_run
+    if ('visit_path' in in_dict) and (in_dict['visit_path'] is not None):
+        visit_path = str(in_dict['visit_path'])
+    return parameters_to_run, visit_path
 
 
 def paramtree_from_json(json_file):
@@ -70,6 +73,7 @@ def paramtree_from_json(json_file):
     '''
     in_dict = json.load(open(json_file))#, object_hook=byteify)
     parameters_to_run = u.Param()
+    visit_path = None
     if in_dict['base_file'] is not None:
         logging.debug("Basing this scan off of the scan in {}".format(in_dict['base_file']))
         previous_scan = Ptycho.load_run(in_dict['base_file'], False)  # load in the run but without the data
@@ -77,10 +81,11 @@ def paramtree_from_json(json_file):
         parameters_to_run.update(previous_parameters)
     if in_dict['parameter_tree'] is not None:
         parameters_to_run.update(in_dict['parameter_tree'], Convert=True)
-    return parameters_to_run
+    if ('visit_path' in in_dict) and (in_dict['visit_path'] is not None):
+        visit_path = str(in_dict['visit_path'])
+    return parameters_to_run, visit_path
 
-
-def parse_param_data_paths_with_paramtree(paramtree, args):
+def parse_param_data_paths_with_paramtree(paramtree, args, extra):
     '''
     This does a string replacement in any str paths in the .data subtree using
     items like .run in the top level tree.
@@ -94,6 +99,6 @@ def parse_param_data_paths_with_paramtree(paramtree, args):
             if isinstance(sub_entry, dict):
                 for dict_entry_key, dict_entry in sub_entry.items():
                     if isinstance(dict_entry, str):
-                        sub_entry[dict_entry_key] = dict_entry % paramtree
+                        sub_entry[dict_entry_key] = dict_entry % {**paramtree, **extra}
             elif isinstance(sub_entry, str):
-                data_entry[sub_entry_key] = sub_entry % paramtree
+                data_entry[sub_entry_key] = sub_entry % {**paramtree, **extra}

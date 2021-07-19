@@ -54,6 +54,11 @@ parser.add_argument('--gpu', '-G',
                     help="Using the GPU-accelerated version of ptypy",
                     action="store_true")
 
+parser.add_argument('--visit', '-V',
+                    dest="visit_path",
+                    help="The path to the visit with all the input data, e.g. /dls/i08-1/data/2021/cm28210-3",
+                    default=None)
+
 args = parser.parse_args()
 
 args.identifier = args.identifier[0] if len(args.identifier)<2 else args.identifier
@@ -61,12 +66,12 @@ args.identifier = args.identifier[0] if len(args.identifier)<2 else args.identif
 
 def get_parameters(args):
     if args.config_file.endswith(('.yml', '.yaml')):
-        parameters_to_run = ptypy_params.paramtree_from_yaml(args.config_file)
+        parameters_to_run, beamline = ptypy_params.paramtree_from_yaml(args.config_file)
     elif args.config_file.endswith(('.jsn', '.json')):
-        parameters_to_run = ptypy_params.paramtree_from_json(args.config_file)
+        parameters_to_run, beamline = ptypy_params.paramtree_from_json(args.config_file)
     else:
         raise RuntimeError("I don't recognise the file extension.")
-    return parameters_to_run
+    return parameters_to_run, beamline
 
 
 if isinstance(args.identifier, list) and not args.share_probe:
@@ -75,8 +80,13 @@ if isinstance(args.identifier, list) and not args.share_probe:
     raise RuntimeError('If you pass a list of arguments you must share the probe between them. Set -S option.')
 
 
-parameters = get_parameters(args)
+parameters, visit_path = get_parameters(args)
 parameters.run = io.get_common_id(args.identifier)
+extra_params = {}
+if visit_path is not None:
+    extra_params["visit_path"] = visit_path
+if args.visit_path is not None:
+    extra_params["visit_path"] = args.visit_path
 
 
 if args.plotting:
@@ -219,7 +229,7 @@ if args.share_probe:
     P.finalize()
 else:
     # have to get the identifier into scan.data somehow.
-    ptypy_params.parse_param_data_paths_with_paramtree(parameters, args)
+    ptypy_params.parse_param_data_paths_with_paramtree(parameters, args, extra_params)
     P = Ptycho(parameters, level=args.ptypy_level)
 
 # now output the mapping compatible files
