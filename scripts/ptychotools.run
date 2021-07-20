@@ -66,12 +66,12 @@ args.identifier = args.identifier[0] if len(args.identifier)<2 else args.identif
 
 def get_parameters(args):
     if args.config_file.endswith(('.yml', '.yaml')):
-        parameters_to_run, beamline = ptypy_params.paramtree_from_yaml(args.config_file)
+        parameters_to_run, visit_path = ptypy_params.paramtree_from_yaml(args.config_file)
     elif args.config_file.endswith(('.jsn', '.json')):
-        parameters_to_run, beamline = ptypy_params.paramtree_from_json(args.config_file)
+        parameters_to_run, visit_path = ptypy_params.paramtree_from_json(args.config_file)
     else:
         raise RuntimeError("I don't recognise the file extension.")
-    return parameters_to_run, beamline
+    return parameters_to_run, visit_path
 
 
 if isinstance(args.identifier, list) and not args.share_probe:

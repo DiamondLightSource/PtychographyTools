@@ -46,7 +46,7 @@ class PtypyParametersTest(unittest.TestCase):
     def test_paramtree_from_json(self):
         import ptychotools.utils.ptypy_parameters as pp
         expected_paramtree = tu.generate_test_param_tree()
-        real_paramtree = pp.paramtree_from_json(tu.get_json_path())
+        real_paramtree, _ = pp.paramtree_from_json(tu.get_json_path())
 
         self.assertEqual(expected_paramtree, real_paramtree, msg="There was a problem converting the json to paramtree."
                                                                  "\n expected_result: %s \n\n actual_result: %s \n\n" % (repr(expected_paramtree), repr(real_paramtree)))
@@ -54,7 +54,7 @@ class PtypyParametersTest(unittest.TestCase):
     def test_paramtree_from_yaml(self):
         import ptychotools.utils.ptypy_parameters as pp
         expected_paramtree = tu.generate_test_param_tree()
-        real_paramtree = pp.paramtree_from_yaml(tu.get_yaml_path())
+        real_paramtree, _ = pp.paramtree_from_yaml(tu.get_yaml_path())
         self.assertEqual(expected_paramtree, real_paramtree, msg="There was a problem converting the yaml to paramtree."
                                                                  "\n expected_result: %s \n\n actual_result: %s \n\n" % (
                                                                      repr(expected_paramtree), repr(real_paramtree)))
