@@ -72,7 +72,7 @@ class PtypyParametersTest(unittest.TestCase):
         args.output_folder = self.output_directory
         args.identifier = paramtree.run
 
-        pp.parse_param_data_paths_with_paramtree(paramtree, args)
+        pp.parse_param_data_paths_with_paramtree(paramtree, args, dict())
 
         self.assertNotEqual(paramtree.scans.MF.data.dfile, dfile_preset_answer, msg="The dfile entry has not been changed."
                                                                                     "\n dfile=%s" % paramtree.scans.MF.data.dfile)
