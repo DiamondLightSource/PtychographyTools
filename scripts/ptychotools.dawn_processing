@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-
 """
-A wrapper for DAWN pre-processing of ptychography data
+Pre-processing of ptychography data collected at J08 endstation
 """
 
 import os
@@ -12,7 +11,7 @@ import argparse
 import subprocess
 import numpy as np
 
-parser = argparse.ArgumentParser(prog="ptychotools.dawn_processing", description="A wrapper for DAWN pre-processing of ptychography data")
+parser = argparse.ArgumentParser(prog="ptychotools.dawn_processing", description="Pre-processing of ptychography data collected at J08 endstation")
 parser.add_argument("dawnexec", type=str, help="DAWN executable")
 parser.add_argument("bean", type=str, help="DAWN processing bean")
 parser.add_argument("--posx", type=str, dest="posx",
@@ -34,24 +33,58 @@ args = parser.parse_args()
 # Parse processing bean
 with open(args.bean, "r") as f:
     config = json.load(f)
+processed_filepath = config["outputFilePath"]
+nexus_filepath = config["filePath"]
+dataset = config["datasetPath"]
+scan_rank = config["scanRank"]
 
 # If the target already exists, there is nothing to do
-run_dawn = True
-if (os.path.isfile(config["outputFilePath"])):
-    #sys.exit("Nothing to do here, a processed file already exists: ", config["filePath"])
-    run_dawn = False
+if (os.path.isfile(processed_filepath)):
+    sys.exit("Nothing to do here, a processed file already exists: %s" %processed_filepath)
 
-# Execute DAWN processing pipeline
-if run_dawn:
-    subprocess.run([args.dawnexec, "-path", args.bean,">stdout", "2>stderr"])
-print("DAWN processing finished.")
+
+def subtract_darkframe(frame, dark):
+    """
+    subtracts a dark image from a given frame
+    and replaces negative values with zeros.
+    """
+    corrected = frame - dark
+    corrected[frame<dark] = 0
+    return corrected
+
+# Write dark-processed data into a new file
+with h5py.File(processed_filepath, "w") as pf:
+    with h5py.File(nexus_filepath, "r") as nf:
+
+        # Data handles
+        raw = nf[dataset]
+        dark = nf["entry/instrument/darkFieldCollector/darkField"] # todo:  replace with parameter
+        
+        # Create processed data
+        d = pf.create_dataset("processed/result/data", raw.shape, dtype=raw.dtype)
+
+        # Dark correction and write to processed data
+        if scan_rank == 2:
+            for j in range(raw.shape[0]):
+                for i in range(raw.shape[1]):
+                    d[j,i] = subtract_darkframe(raw[j,i], dark[0])
+        elif scan_rank == 1:
+            for i in range(raw.shape[0]):
+                d[i] = subtract_darkframe(raw[i], dark[0])
+        else:
+            sys.exit("Unknown scan rank: %d" %scan_rank)
+        print("Dark correction finished.")
+
+        # Create link to nexus file
+        pf["entry"] = h5py.ExternalLink(nexus_filepath, "entry")
+        print("Linked /entry from original nexus file into processed file.")
 
 # Check if motor positions have been provided
 if (args.posx is None) and (args.posy is None):
     sys.exit("No key to motor positions (readback values) provided, will terminate processing here")
 if (args.posx_set is None) and (args.posy_set is None):
     sys.exit("No key to motor positions (set values) provided, will terminate processing here")
-print("Motor positions provide, continue with corrections...")
+print("Motor positions provided, continue with corrections...")
 
 # Parse motor positions
 with h5py.File(config["outputFilePath"], "r") as f:
@@ -64,10 +97,14 @@ posy_original = np.copy(posy)
 print("Readback and set values loaded.")
 
 # Scan rank
-print("The scan rank is ", config["scanRank"])
+
+if (posx.ndim == 1):
+    scan_rank = 1
+    print("Scan rank has been reset to 1")
+print("The scan rank is ", scan_rank)
 
 # Make sure that readback values include leading dimension
-if config["scanRank"] == 1:
+if (scan_rank == 1):
     posx = np.expand_dims(posx, axis=0)
     posy = np.expand_dims(posy, axis=0)
 print("Readback shape is ", posx.shape)
@@ -108,13 +145,21 @@ if args.multi and is_mapped_arb:
 with h5py.File(config["outputFilePath"], "r") as f:
     nr_data_frames = f[config["datasetPath"]].shape[config["scanRank"]-1]
 if args.shape and is_mapped_arb:
+    print(nr_data_frames, posx.shape)
     if (nr_data_frames < posx.shape[1]):
         posx = posx[:,:nr_data_frames]
         print("There was a shape mismatch between the data and the readback values (x), should be fixed now")
+        print("posx shape is", posx.shape)
     if (nr_data_frames < posy.shape[1]):
         posy = posy[:,:nr_data_frames]
         print("There was a shape mismatch between the data and the readback values (y), should be fixed now")
-    
+        print("posy shape is", posy.shape)
+
+# Squeeze
+if config["scanRank"] == 1:
+    posx = posx.squeeze()
+    posy = posy.squeeze()
+
 # Store processed motor positions
 with h5py.File(config["outputFilePath"], "r+") as f:
     try:
@@ -122,7 +167,7 @@ with h5py.File(config["outputFilePath"], "r+") as f:
         del f["processed/result/posy"]
     except:
         pass
-    f["processed/result/posx"] = posx.squeeze()
-    f["processed/result/posy"] = posy.squeeze()
+    f["processed/result/posx"] = posx
+    f["processed/result/posy"] = posy
         
 

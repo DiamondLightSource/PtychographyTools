@@ -19,6 +19,7 @@ usage() {
       echo ":-r: Number of repeated reconstructions (for validation)"
 }
 
+REPEAT=0
 PROPAGATE=false
 EXTRA_ARGS="-P 0"
 
