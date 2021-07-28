@@ -12,8 +12,14 @@ import subprocess
 import numpy as np
 
 parser = argparse.ArgumentParser(prog="ptychotools.dawn_processing", description="Pre-processing of ptychography data collected at J08 endstation")
-parser.add_argument("dawnexec", type=str, help="DAWN executable")
-parser.add_argument("bean", type=str, help="DAWN processing bean")
+parser.add_argument("-i", "--input", type=str,
+                    help="Input file path to nexus file")
+parser.add_argument("-o", "--output", type=str, 
+                    help="Output file path for processed file")
+parser.add_argument("-d", "--dataset", type=str,
+                    help="Key to dataset inside nexus file")
+parser.add_argument("-r", "--scanrank", type=int,
+                    help="The rank of the scan")
 parser.add_argument("--posx", type=str, dest="posx",
                     help="Key to X motor position (readback values)")
 parser.add_argument("--posy", type=str, dest="posy",
@@ -30,13 +36,11 @@ parser.add_argument("-t", "--topup-check", dest="topup", type=bool,
                     help="Check if the scan went through the top-up and fix the data")
 args = parser.parse_args()
 
-# Parse processing bean
-with open(args.bean, "r") as f:
-    config = json.load(f)
-processed_filepath = config["outputFilePath"]
-nexus_filepath = config["filePath"]
-dataset = config["datasetPath"]
-scan_rank = config["scanRank"]
+# Parse processing pargs
+processed_filepath = args.output
+nexus_filepath = args.input
+dataset = args.dataset
+scan_rank = args.scanrank
 
 # If the target already exists, there is nothing to do
 if (os.path.isfile(processed_filepath)):
@@ -87,7 +91,7 @@ if (args.posx_set is None) and (args.posy_set is None):
 print("Motor positions provided, continue with corrections...")
 
 # Parse motor positions
-with h5py.File(config["outputFilePath"], "r") as f:
+with h5py.File(args.output, "r") as f:
     posx = f[args.posx][:].squeeze()
     posy = f[args.posy][:].squeeze()
     posx_set = f[args.posx_set][:].squeeze()
@@ -142,8 +146,8 @@ if args.multi and is_mapped_arb:
         print("The readback values (y) have been triggered multiple times, should be fixed now")
 
 # Check if diffraction data and motor positions match in shape
-with h5py.File(config["outputFilePath"], "r") as f:
-    nr_data_frames = f[config["datasetPath"]].shape[config["scanRank"]-1]
+with h5py.File(args.output, "r") as f:
+    nr_data_frames = f[args.dataset].shape[args.scanrank-1]
 if args.shape and is_mapped_arb:
     print(nr_data_frames, posx.shape)
     if (nr_data_frames < posx.shape[1]):
@@ -156,12 +160,12 @@ if args.shape and is_mapped_arb:
         print("posy shape is", posy.shape)
 
 # Squeeze
-if config["scanRank"] == 1:
+if args.scanrank == 1:
     posx = posx.squeeze()
     posy = posy.squeeze()
 
 # Store processed motor positions
-with h5py.File(config["outputFilePath"], "r+") as f:
+with h5py.File(args.output, "r+") as f:
     try:
         del f["processed/result/posx"]
         del f["processed/result/posy"]
@@ -169,5 +173,3 @@ with h5py.File(config["outputFilePath"], "r+") as f:
         pass
     f["processed/result/posx"] = posx
     f["processed/result/posy"] = posy
-        
-
