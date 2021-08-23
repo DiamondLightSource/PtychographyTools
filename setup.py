@@ -30,6 +30,7 @@ setup(
              'scripts/ptychotools.j08_preproc',
              'scripts/ptychotools.utils',
              'scripts/ptychotools.combine_spectro_scans',
-             'scripts/ptychotools.combine_tomo_scans']
+             'scripts/ptychotools.combine_tomo_scans',
+             'scripts/ptychotools.convert_ptyr_to_mapping']
 )
 

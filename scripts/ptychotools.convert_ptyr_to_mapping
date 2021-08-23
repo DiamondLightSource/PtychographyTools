@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+import argparse, sys
+from ptychotools.utils import io, log
+
+parser = argparse.ArgumentParser(prog="ptychotools.convert_ptyr_to_mapping", 
+                                 description="Process object from ptypy reconstruction and convert to mapped NeXus file")
+parser.add_argument("ptyr_file", help="Path to .ptyr reconstruction file")
+parser.add_argument("-r", "--rmramp", action="store_true", help="Removes phase ramp from object")
+parser.add_argument("-i", "--rmiter", type=int, default=2, help="Nr. of iterations of ramp removal")
+parser.add_argument("-a", "--rmsupport", type=float, default=0.5, help="Support for phase ramp removal given as a radius in fractional units, default is 0.5")
+parser.add_argument("-b", "--border", type=int, default=25, help="Border to be cropped on each side of the reconstruction. Default is 25 px.")
+args = parser.parse_args()
+
+print("Converting to nexus files...")
+io.convert_ptyr_to_mapping(args.ptyr_file, border=args.border, rmramp=args.rmramp, rmradius=args.rmsupport, rmiter=args.rmiter)
+print("Done.")
