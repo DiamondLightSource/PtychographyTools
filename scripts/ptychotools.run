@@ -162,13 +162,20 @@ if args.use_gpu:
                 print("Warning: could not import ML_pycuda engine")
             engine.name = "ML_pycuda"
             log(3, "Replacing the ML engine with the gpu-accelerated ML_pycuda engine")
-        elif (engine.name == "DR_pycuda") or (engine.name == "DR"):
+        elif (engine.name == "SDR_pycuda") or (engine.name == "SDR"):
             try:
-                from ptypy.accelerate.cuda_pycuda.engines import DR_pycuda_stream
+                from ptypy.accelerate.cuda_pycuda.engines.stochastic import SDR_pycuda
             except ImportError:
-                print("Warning: could not import DR_pycuda_stream engine")
-            engine.name = "DR_pycuda_stream"
-            log(3, "Replacing the DR engine with the gpu-accelerated DR_pycuda engine")
+                print("Warning: could not import SDR_pycuda engine")
+            engine.name = "SDR_pycuda"
+            log(3, "Replacing the SDR engine with the gpu-accelerated SDR_pycuda engine")
+        elif (engine.name == "EPIE_pycuda") or (engine.name == "EPIE"):
+            try:
+                from ptypy.accelerate.cuda_pycuda.engines.stochastic import EPIE_pycuda
+            except ImportError:
+                print("Warning: could not import EPIE_pycuda engine")
+            engine.name = "EPIE_pycuda"
+            log(3, "Replacing the EPIE engine with the gpu-accelerated EPIE_pycuda engine")
         elif engine.name == 'DM_glad':
             try:
                 from ptychotools.engines import DM_glad_cuda
