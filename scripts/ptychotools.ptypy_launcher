@@ -22,13 +22,14 @@ usage() {
 PROPAGATE=false
 LINKED=false
 USE_GPU=false
+USE_SINGLE=false
 NUM_GPU=1
 EXTRA_ARGS=""
 JOB_NAME="ptypy"
 REPEAT=0
 USE_TERSE=true
 
-while getopts "hlgvn:j:c:i:o:p:r:" opt; do
+while getopts "hlgsvn:j:c:i:o:p:r:" opt; do
   case $opt in
     c )
       CLUSTER_CONFIG_FILE=`readlink -e $OPTARG`;
@@ -54,6 +55,9 @@ while getopts "hlgvn:j:c:i:o:p:r:" opt; do
       ;;
     v )
       USE_TERSE=false
+      ;;
+    s )
+      USE_SINGLE=true
       ;;
     n )
       NUM_GPU=$OPTARG
@@ -107,6 +111,10 @@ else
     mkdir -p $OUTPUT_FOLDER
 fi
 
+if [ $USE_SINGLE ];
+then
+    SINGLE_THREADED=true;
+fi
 
 if [ "$CLUSTER_QUEUE" = "HAMILTON" ];
 then
