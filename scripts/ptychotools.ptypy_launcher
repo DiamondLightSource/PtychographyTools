@@ -111,7 +111,7 @@ else
     mkdir -p $OUTPUT_FOLDER
 fi
 
-if [ $USE_SINGLE ];
+if $USE_SINGLE;
 then
     SINGLE_THREADED=true;
 fi
