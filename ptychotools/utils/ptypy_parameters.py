@@ -85,7 +85,7 @@ def paramtree_from_json(json_file):
         visit_path = str(in_dict['visit_path'])
     return parameters_to_run, visit_path
 
-def parse_param_data_paths_with_paramtree(paramtree, args, extra):
+def parse_param_data_paths_with_paramtree(paramtree, output_folder, extra):
     '''
     This does a string replacement in any str paths in the .data subtree using
     items like .run in the top level tree.
@@ -94,7 +94,7 @@ def parse_param_data_paths_with_paramtree(paramtree, args, extra):
     '''
     for scan_key, scan in paramtree.scans.items():
         data_entry = scan.data
-        scan.data.dfile = "%s/scan_%s.ptyd" % (get_output_folder_name(args), str(paramtree.run))
+        scan.data.dfile = "%s/scan_%s.ptyd" % (output_folder, str(paramtree.run))
         for sub_entry_key, sub_entry in data_entry.items():
             if isinstance(sub_entry, dict):
                 for dict_entry_key, dict_entry in sub_entry.items():

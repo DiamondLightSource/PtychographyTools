@@ -61,6 +61,7 @@ class PtypyParametersTest(unittest.TestCase):
 
     def test_parse_param_data_paths_with_paramtree(self):
         import ptychotools.utils.ptypy_parameters as pp
+        import ptychotools.utils.io as io
         dfile_preset_answer = 'cheesecake'
         paramtree = tu.generate_test_param_tree()
         paramtree.run = "1234"
@@ -72,7 +73,7 @@ class PtypyParametersTest(unittest.TestCase):
         args.output_folder = self.output_directory
         args.identifier = paramtree.run
 
-        pp.parse_param_data_paths_with_paramtree(paramtree, args, dict())
+        pp.parse_param_data_paths_with_paramtree(paramtree, io.get_output_folder_name(args), dict())
 
         self.assertNotEqual(paramtree.scans.MF.data.dfile, dfile_preset_answer, msg="The dfile entry has not been changed."
                                                                                     "\n dfile=%s" % paramtree.scans.MF.data.dfile)

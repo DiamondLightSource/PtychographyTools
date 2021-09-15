@@ -236,7 +236,7 @@ if args.share_probe:
     P.finalize()
 else:
     # have to get the identifier into scan.data somehow.
-    ptypy_params.parse_param_data_paths_with_paramtree(parameters, args, extra_params)
+    ptypy_params.parse_param_data_paths_with_paramtree(parameters, io.get_output_folder_name(args), extra_params)
     P = Ptycho(parameters, level=args.ptypy_level)
 
 # now output the mapping compatible files
