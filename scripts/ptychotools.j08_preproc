@@ -34,6 +34,14 @@ parser.add_argument("-m", "--multi-trigger-check", dest="multi", type=bool,
                     help="Check if there are mutliple readback motor positions per set motor position")
 parser.add_argument("-t", "--topup-check", dest="topup", type=bool, 
                     help="Check if the scan went through the top-up and fix the data")
+parser.add_argument("-p", "--padding", type=int, nargs=4, 
+                    help="Padding the data, provide 4 integers for top, bottom, left, right")
+parser.add_argument("-c", "--cropping", type=int, nargs=4,
+                    help="Cropping the data, provide 4 integers for top, bottom, left, right")
+parser.add_argument("-b", "--binning", type=int,
+                    help="Re-binning the data by a given factor, ingoing shape needs to be divisble by that factor")
+parser.add_argument("-f", "--flip-transpose", dest="flip_or_transpose", type=int, default=0, 
+                    help="Flip and/or transpose data according to given orientation (same defintion used in ptypy)")
 args = parser.parse_args()
 
 # Parse processing pargs
@@ -56,6 +64,34 @@ def subtract_darkframe(frame, dark):
     corrected[frame<dark] = 0
     return corrected
 
+def padding_frame(frame, pad_width):
+    t,b,l,r = pad_width
+    return np.pad(frame, ((t,b),(l,r)))
+
+def cropping_frame(frame, crop_length):
+    crop = np.copy(crop_length)
+    crop[1] *= -1
+    crop[3] *= -1
+    crop = [None if l==0 else l for l in crop]
+    t,b,l,r = crop
+    return frame[slice(t,b),slice(l,r)]
+
+def binning_frame(frame, binfact):
+    height, width = frame.shape
+    return frame.reshape((height//binfact, binfact, width//binfact, binfact)).sum(axis=(1,3))
+
+def process_frame(frame, padding=None, cropping=None, binning=None):
+    if padding:
+        frame = padding_frame(frame, args.padding)
+        #print("After padding, the shape is: ", frame.shape)
+    if cropping:
+        frame = cropping_frame(frame, args.cropping)
+        #print("After cropping, the shape is: ", frame.shape)
+    if binning:
+        frame = binning_frame(frame, args.binning)
+        #print("After binning, the shape is: ", frame.shape)
+    return frame
+
 # Write dark-processed data into a new file
 with h5py.File(processed_filepath, "w") as pf:
     with h5py.File(nexus_filepath, "r") as nf:
@@ -64,17 +100,43 @@ with h5py.File(processed_filepath, "w") as pf:
         raw = nf[dataset]
         dark = nf["entry/instrument/darkFieldCollector/darkField"] # todo:  replace with parameter
         
+        # Calculate target shape
+        sh = np.array(raw.shape)
+        print("Original shape is: ", sh)
+        if args.padding:
+            sh[-2] += (args.padding[0] + args.padding[1])
+            sh[-1] += (args.padding[2] + args.padding[3])
+            print("After padding, the shape will be: ", sh)
+        if args.cropping:
+            sh[-2] -= (args.cropping[0] + args.cropping[1])
+            sh[-1] -= (args.cropping[2] + args.cropping[3])
+            print("After cropping, the shape will be: ", sh)
+        if args.binning:
+            sh[-2] /= args.binning
+            sh[-1] /= args.binning
+            print("After binning, the shape will be: ", sh)
+
         # Create processed data
-        d = pf.create_dataset("processed/result/data", raw.shape, dtype=raw.dtype)
+        d = pf.create_dataset("processed/result/data", sh, dtype=raw.dtype)
 
         # Dark correction and write to processed data
-        if scan_rank == 2:
+        if scan_rank == 3:
+            for k in range(raw.shape[0]):
+                for j in range(raw.shape[1]):
+                    for i in range(raw.shape[2]):
+                        frame = subtract_darkframe(raw[k,j,i], dark[0])
+                        d[k,j,i] = process_frame(frame, args.padding, args.cropping, args.binning)
+            
+        elif scan_rank == 2:
             for j in range(raw.shape[0]):
                 for i in range(raw.shape[1]):
-                    d[j,i] = subtract_darkframe(raw[j,i], dark[0])
+                    frame = subtract_darkframe(raw[j,i], dark[0])
+                    d[j,i] = process_frame(frame, args.padding, args.cropping, args.binning)
+
         elif scan_rank == 1:
             for i in range(raw.shape[0]):
-                d[i] = subtract_darkframe(raw[i], dark[0])
+                frame = subtract_darkframe(raw[i], dark[0])
+                d[i] = process_frame(frame, args.padding, args.cropping, args.binning)
         else:
             sys.exit("Unknown scan rank: %d" %scan_rank)
         print("Dark correction finished.")
@@ -101,7 +163,6 @@ posy_original = np.copy(posy)
 print("Readback and set values loaded.")
 
 # Scan rank
-
 if (posx.ndim == 1):
     scan_rank = 1
     print("Scan rank has been reset to 1")
