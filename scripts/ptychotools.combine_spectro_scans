@@ -46,13 +46,13 @@ if args.single:
     fnames = args.path + "scan_%d_%d/scan_%d_%d.ptyr" %(scan_ids[0], scan_ids[-1], scan_ids[0], scan_ids[-1])
 else:
     if args.fmt == "04d":
-        fnames = [args.path + "scan_%04d/scan_%04d.ptyr" %(sid,sid) for sid in scan_ids]
+        fnames = [args.path + "/scan_%04d/scan_%04d.ptyr" %(sid,sid) for sid in scan_ids]
     elif args.fmt == "linked":
-        fnames = [args.path + "scan_linked_%d/scan_linked_%d.ptyr" %(sid,sid) for sid in scan_ids]
+        fnames = [args.path + "/scan_linked_%d/scan_linked_%d.ptyr" %(sid,sid) for sid in scan_ids]
     elif args.fmt == "stack":
-        fnames = [args.path + "stack_%d.ptyr" %(sid) for sid in scan_ids]
+        fnames = [args.path + "/stack_%d.ptyr" %(sid) for sid in scan_ids]
     else:
-        fnames = [args.path + "scan_%d/scan_%d.ptyr" %(sid,sid) for sid in scan_ids]
+        fnames = [args.path + "/scan_%d/scan_%d.ptyr" %(sid,sid) for sid in scan_ids]
 
 if args.output is None:
     outpath = args.path + "/spectro_scan_%d_%d" %(scan_ids[0], scan_ids[-1])
