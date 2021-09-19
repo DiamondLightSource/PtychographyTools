@@ -136,21 +136,21 @@ if args.use_gpu:
     for id, engine in parameters.engines.items():
         if (engine.name == "DM_pycuda_streams"):
             try:
-                from ptypy.accelerate.cuda_pycuda.engines import DM_pycuda_streams
+                from ptypy.accelerate.cuda_pycuda.engines import projectional_pycuda_streams
             except ImportError:
                 print("Warning: could not import DM_pycuda_streams engine")
             engine.name = "DM_pycuda_streams"
             log(3, "Replacing the DM engine with the gpu-accelerated DM_pycuda engine")
         elif (engine.name == "DM_pycuda_stream") or (engine.name == "DM"):
             try:
-                from ptypy.accelerate.cuda_pycuda.engines import DM_pycuda_stream
+                from ptypy.accelerate.cuda_pycuda.engines import projectional_pycuda_stream
             except ImportError:
                 print("Warning: could not import DM_pycuda_stream engine")
             engine.name = "DM_pycuda_stream"
             log(3, "Replacing the DM engine with the gpu-accelerated DM_pycuda engine")
         elif (engine.name == "DM_pycuda"):
             try:
-                from ptypy.accelerate.cuda_pycuda.engines import DM_pycuda
+                from ptypy.accelerate.cuda_pycuda.engines import projectional_pycuda
             except ImportError:
                 print("Warning: could not import DM_pycuda engine")
             engine.name = "DM_pycuda"
