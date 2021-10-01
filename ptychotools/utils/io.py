@@ -65,7 +65,7 @@ def write_dataset_to_file(data, file_path,  obj_name, x, y, tag, dtype=np.float6
         dataset['data'] = data.astype(dtype)
 
 
-def convert_ptyr_to_mapping(file_path, border=80, rmramp=True, rmradius=0.5, rmiter=2):
+def convert_ptyr_to_mapping(file_path, border=80, rmramp=True, rmradius=0.5, rmiter=2, phaseshift=0.0):
     '''
     :param file_path: path the ptypy ptyr
     :param border: The pixel border to trim from the object reconstruction
@@ -92,6 +92,7 @@ def convert_ptyr_to_mapping(file_path, border=80, rmramp=True, rmradius=0.5, rmi
             W = np.sqrt(XX**2 + YY**2) < (rmradius * (nx+ny) / 4)
             for i in range(rmiter):
                 data = u.rmphaseramp(data, weight=W)
+        data *= np.exp(1j * phaseshift)
         data = data.reshape(data.shape+(1, 1))
 
         magnitudes_path = file_path.split('.')[0] + obj_name + '_mag.nxs'
