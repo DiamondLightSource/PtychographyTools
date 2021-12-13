@@ -129,7 +129,7 @@ then
     else
 	MEMORY_REQUEST=8G # for Hamilton we hardcode 8G per slot 
 	NUM_PROCS_PER_NODE=$(( 40 < TOTAL_NUM_PROCESSORS ? 40 : TOTAL_NUM_PROCESSORS )); # can be maximum 40
-	qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l exclusive,m_mem_free=$MEMORY_REQUEST -N $JOB_NAME"
+	qsub_args="-pe openmpi $TOTAL_NUM_PROCESSORS -l gpu=1,exclusive,m_mem_free=$MEMORY_REQUEST -N $JOB_NAME"
     fi
 
     echo "Using Hamilton"
