@@ -116,8 +116,15 @@ with h5py.File(processed_filepath, "w") as pf:
             sh[-1] /= args.binning
             print("After binning, the shape will be: ", sh)
 
+        # Determine target dtype
+        raw_data_max = raw[0].max() * args.binning * args.binning
+        if (raw_data_max < np.iinfo(raw.dtype).max):
+            target_dtype = raw.dtype
+        else:
+            target_dtype = np.uint32
+
         # Create processed data
-        d = pf.create_dataset("processed/result/data", sh, dtype=raw.dtype)
+        d = pf.create_dataset("processed/result/data", sh, dtype=target_dtype)
 
         # Dark correction and write to processed data
         if scan_rank == 3:

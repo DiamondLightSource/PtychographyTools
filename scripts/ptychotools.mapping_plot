@@ -22,11 +22,15 @@ parser.add_argument('--port', "-p",
                     default=61613,
                     type=int)
 
+parser.add_argument("--disable", "-d",
+                    dest="disable",
+                    help="Disable mapping plotter (no images are sent)"
+                    action="store_true")
 
 args = parser.parse_args()
 
 
-if __name__== '__main__':
+if __name__== '__main__' and not args.disable:
     import stomp
     import json
     conn = stomp.Connection([(args.host, args.port)])
