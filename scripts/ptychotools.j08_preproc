@@ -11,13 +11,15 @@ import argparse
 import subprocess
 import numpy as np
 
-parser = argparse.ArgumentParser(prog="ptychotools.dawn_processing", description="Pre-processing of ptychography data collected at J08 endstation")
+parser = argparse.ArgumentParser(prog="ptychotools.dawn_processing", description="Pre-processing of ptychography data collected at I08-1 endstation")
 parser.add_argument("-i", "--input", type=str,
                     help="Input file path to nexus file")
 parser.add_argument("-o", "--output", type=str, 
                     help="Output file path for processed file")
 parser.add_argument("-d", "--dataset", type=str,
                     help="Key to dataset inside nexus file")
+parser.add_argument("-f", "--darkfield", type=str,
+                    help="Key to darkfield inside nexus file")
 parser.add_argument("-r", "--scanrank", type=int,
                     help="The rank of the scan")
 parser.add_argument("--posx", type=str, dest="posx",
@@ -48,6 +50,7 @@ args = parser.parse_args()
 processed_filepath = args.output
 nexus_filepath = args.input
 dataset = args.dataset
+darkfield = args.darkfield
 scan_rank = args.scanrank
 
 # If the target already exists, there is nothing to do
@@ -98,7 +101,8 @@ with h5py.File(processed_filepath, "w") as pf:
 
         # Data handles
         raw = nf[dataset]
-        dark = nf["entry/instrument/darkFieldCollector/darkField"] # todo:  replace with parameter
+        dark = nf[darkfield]
+        #dark = nf["entry/instrument/darkFieldCollector/darkField"] # todo:  replace with parameter
         
         # Calculate target shape
         sh = np.array(raw.shape)
@@ -117,11 +121,14 @@ with h5py.File(processed_filepath, "w") as pf:
             print("After binning, the shape will be: ", sh)
 
         # Determine target dtype
-        raw_data_max = raw[0].max() * args.binning * args.binning
+        raw_data_max = raw[0].max()
+        if args.binning:
+            raw_data_max * args.binning * args.binning
         if (raw_data_max < np.iinfo(raw.dtype).max):
             target_dtype = raw.dtype
         else:
             target_dtype = np.uint32
+        print("The target data type is ", target_dtype)
 
         # Create processed data
         d = pf.create_dataset("processed/result/data", sh, dtype=target_dtype)
