@@ -18,7 +18,7 @@ parser.add_argument("-o", "--output", type=str,
                     help="Output file path for processed file")
 parser.add_argument("-d", "--dataset", type=str,
                     help="Key to dataset inside nexus file")
-parser.add_argument("-f", "--darkfield", type=str,
+parser.add_argument("-a", "--darkfield", type=str,
                     help="Key to darkfield inside nexus file")
 parser.add_argument("-r", "--scanrank", type=int,
                     help="The rank of the scan")
@@ -36,10 +36,10 @@ parser.add_argument("-m", "--multi-trigger-check", dest="multi", type=bool,
                     help="Check if there are mutliple readback motor positions per set motor position")
 parser.add_argument("-t", "--topup-check", dest="topup", type=bool, 
                     help="Check if the scan went through the top-up and fix the data")
-parser.add_argument("-p", "--padding", type=int, nargs=4, 
-                    help="Padding the data, provide 4 integers for top, bottom, left, right")
-parser.add_argument("-c", "--cropping", type=int, nargs=4,
-                    help="Cropping the data, provide 4 integers for top, bottom, left, right")
+parser.add_argument("-p", "--padding", type=str,
+                    help="Padding the data, provide 4 comma-seperated integers for top,bottom,left,right")
+parser.add_argument("-c", "--cropping", type=str,
+                    help="Cropping the data, provide 4 comma-separated integers for top,bottom,left,right")
 parser.add_argument("-b", "--binning", type=int,
                     help="Re-binning the data by a given factor, ingoing shape needs to be divisble by that factor")
 parser.add_argument("-f", "--flip-transpose", dest="flip_or_transpose", type=int, default=0, 
@@ -52,6 +52,12 @@ nexus_filepath = args.input
 dataset = args.dataset
 darkfield = args.darkfield
 scan_rank = args.scanrank
+
+# Convert padding/cropping string
+if args.padding:
+    args.padding = tuple(map(int, args.padding.split(",")))
+if args.cropping:
+    args.cropping = tuple(map(int, args.cropping.split(",")))
 
 # If the target already exists, there is nothing to do
 if (os.path.isfile(processed_filepath)):
@@ -123,7 +129,7 @@ with h5py.File(processed_filepath, "w") as pf:
         # Determine target dtype
         raw_data_max = raw[0].max()
         if args.binning:
-            raw_data_max * args.binning * args.binning
+            raw_data_max *= (args.binning * args.binning)
         if (raw_data_max < np.iinfo(raw.dtype).max):
             target_dtype = raw.dtype
         else:
