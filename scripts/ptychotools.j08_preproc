@@ -6,6 +6,7 @@ Pre-processing of ptychography data collected at J08 endstation
 import os
 import sys
 import json
+import time
 import h5py
 import argparse
 import subprocess
@@ -52,6 +53,9 @@ nexus_filepath = args.input
 dataset = args.dataset
 darkfield = args.darkfield
 scan_rank = args.scanrank
+
+# Start timer
+t0 = time.time()
 
 # Convert padding/cropping string
 if args.padding:
@@ -254,3 +258,5 @@ with h5py.File(args.output, "r+") as f:
         pass
     f["processed/result/posx"] = posx
     f["processed/result/posy"] = posy
+
+print("Total time for processing %d frames = %d seconds" %(nr_data_frames, time.time() - t0))

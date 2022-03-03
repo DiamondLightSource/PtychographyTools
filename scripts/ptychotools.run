@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import argparse, sys
+import argparse, sys, time
 
 from ptychotools.utils import io, log, parallel
 from ptychotools.utils import ptypy_parameters as ptypy_params
@@ -129,6 +129,7 @@ else:
     parameters.io.rfile = None
     parameters.io.autosave = u.Param(active=False)
     log(3, "Autosave is off. No output will be saved.")
+#parameters.io.benchmark = "all"
 
 def load_gpu_engines():
     try:
@@ -237,6 +238,7 @@ else:
 # now output the mapping compatible files
 if parallel.master:
     log(3, "Converting to nexus files...")
+    t0 = time.time()
     io.convert_ptyr_to_mapping(parameters.io.rfile, border=25)
-    log(3, "Done.")
+    log(3, "Done. (%f)" %(time.time() - t0))
 
