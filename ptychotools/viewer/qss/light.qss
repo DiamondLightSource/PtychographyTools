@@ -1,0 +1,8 @@
+QFrame[accessibleName="specialframe"] {
+    border: 0px;
+}
+
+QFrame[accessibleName="pyqtframe"] {
+   background-color: black;
+   border: 1px solid #999999;
+}

@@ -16,7 +16,8 @@ setup(
     description='Wrappers for the ptypy framework',
     package_dir={'ptychotools': 'ptychotools'},
     packages=package_list,
-    package_data={'test' : ['resource/*']},
+    package_data={'test' : ['resource/*'],
+                  'ptychotools': ['viewer/ui/*.ui','viewer/qss/*.qss']},
     scripts=['scripts/ptychotools.propagate',
              'scripts/ptychotools.add_flat_dark',
              'scripts/ptychotools.mapping_plot',
@@ -31,6 +32,7 @@ setup(
              'scripts/ptychotools.utils',
              'scripts/ptychotools.combine_spectro_scans',
              'scripts/ptychotools.combine_tomo_scans',
-             'scripts/ptychotools.convert_ptyr_to_mapping']
+             'scripts/ptychotools.convert_ptyr_to_mapping',
+             'scripts/ptychotools.viewer']
 )
 
