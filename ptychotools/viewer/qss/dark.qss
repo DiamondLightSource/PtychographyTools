@@ -19,6 +19,18 @@ QLabel, GraphicsLayoutWidget, QTextEdit, PlotWidget
     border: 0px;
 }
 
+QLineEdit
+{
+    color: black;
+    border-color: red;
+    background-color: white;
+}	
+
+QCheckBox
+{
+    background-color: #777777;
+}
+
 QPushButton
 {
     color: white;

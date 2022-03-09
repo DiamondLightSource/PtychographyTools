@@ -4,11 +4,11 @@ import numpy as np
 import os, sys, time
 
 # Import widgets
-#from widgets import ControlView, ParamView
-#from widgets import ObjectView, ProbeView, RuntimeView
+from .widgets import ControlView, Canvas
+#from widgets import ObjectView, ProbeView, RuntimeView, ParamView
 
 # Import modules
-#from recons import ReconsHandler
+from .io import DataHandler
 
 # Load UI
 curdir = os.path.dirname(os.path.realpath(__file__))
@@ -26,15 +26,21 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.setupUi(self)
         Viewer.instance = self
 
-        # # Reconstruction handler
-        # self.recons = ReconsHandler(args.path)
-        # self.recons.init_rundict_from_path()
+        # Data handler
+        self.dh = DataHandler()
 
-        # # Control panel
-        # self.controlFrame.layout().removeWidget(self.controlWidget)
-        # self.controlWidget.setParent(None)
-        # self.controlView = ControlView()
-        # self.controlFrame.layout().addWidget(self.controlView)
+        # Control panel
+        self.controlFrame.layout().removeWidget(self.controlWidget)
+        self.controlWidget.setParent(None)
+        self.controlView = ControlView()
+        self.controlFrame.layout().addWidget(self.controlView)
+        self.controlView.update_source(args.source)
+
+        # Frame panel
+        self.canvasFrame.layout().removeWidget(self.canvasWidget)
+        self.canvasWidget.setParent(None)
+        self.canvas = Canvas()
+        self.canvasFrame.layout().addWidget(self.canvas)
 
         # # Params panel
         # self.paramFrame.layout().removeWidget(self.paramWidget)
@@ -42,16 +48,11 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         # self.paramView = ParamView()
         # self.paramFrame.layout().addWidget(self.paramView)
 
-        # # Object panel
-        # self.objectFrame.layout().removeWidget(self.objectWidget)
-        # self.objectWidget.setParent(None)
-        # self.objectView = ObjectView()
-        # self.objectFrame.layout().addWidget(self.objectView)
-
         # # Probe panel
         # self.probeFrame.layout().removeWidget(self.probeWidget)
         # self.probeWidget.setParent(None)
         # self.probeView = ProbeView(N=self.recons.prshape[0], maxcol=args.maxcol)
+
         # self.probeFrame.layout().addWidget(self.probeView)
 
         # # Runtime panel
@@ -66,34 +67,60 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         # self.timer.timeout.connect(self.recons.check)
         # self.timer.start()
 
-        # # Connections
-        # self.set_connections()
+        # Connections
+        self.set_connections()
         
         # GUI Style
         self.style = args.style
-        #self.set_stylesheets()
-
-        #self.recons.newiter.emit(-1) 
-
-    def set_connections(self):
-        """
-        Set connections for all widgets and modules.
-        """
-        self.controlView.newevents.stateChanged.connect(self.check_for_new_events)
-        self.controlView.iteration_slider.valueChanged.connect(self.replot)
-        self.controlView.replot_button.released.connect(self.replot)
-        self.controlView.crop_box.editingFinished.connect(self.replot)
-        self.controlView.object_vmin_box.editingFinished.connect(self.replot)
-        self.controlView.object_vmax_box.editingFinished.connect(self.replot)
-        self.recons.newiter.connect(self.replot)
+        self.set_stylesheets()
 
     def set_stylesheets(self):
         """
         Set stylesheet for all widgets.
         """
-        for w in [self, self.controlView, self.paramView]:
+        for w in [self, self.controlView]:
             w.setStyleSheet(open(curdir + "/qss/{:s}.qss".format(self.style)).read())
-    
+
+    def set_connections(self):
+        """
+        Set connections for all widgets and modules.
+        """
+        self.dh.connected.connect(self.service_started)
+        self.dh.disconnected.connect(self.service_stopped)
+        self.dh.newframe.connect(self.draw)
+        self.controlView.start.released.connect(self.dh.start_service)
+        self.controlView.stop.released.connect(self.dh.stop_service)
+        self.controlView.source.textChanged.connect(self.dh.source_updated)
+        self.controlView.save_dark.released.connect(self.dh.save_dark_frame)
+
+    def service_started(self):
+        """
+        Callback once service has been started.
+        """
+        self.controlView.start.setEnabled(False)
+        self.controlView.stop.setEnabled(True)
+
+    def service_stopped(self):
+        """
+        Callback once service has been stoped.
+        """
+        self.controlView.start.setEnabled(True)
+        self.controlView.stop.setEnabled(False)        
+
+    def draw(self):
+        """
+        Update image
+        """
+        print("draw frame")
+        self.canvas.drawFrame(self.dh.frame)
+
+    def cleanup(self):
+        """
+        Cleaning up before exiting the programm
+        """
+        self.dh.stop_service()
+        print("Exiting...")
+
     def check_for_new_events(self, check):
         """
         Start/stop timer for checking new events.
