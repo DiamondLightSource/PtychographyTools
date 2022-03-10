@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from PyQt5 import QtWidgets, Qt,  uic
-import os, sys
+import os, sys, time
 import matplotlib.cm as cm
 import pyqtgraph as pg
 import numpy as np
@@ -10,8 +10,6 @@ curdir = os.path.dirname(os.path.realpath(__file__))
 UiControlWidget, _ = uic.loadUiType(curdir + '/ui/control.ui')
 UiCanvasWidget, _ = uic.loadUiType(curdir + '/ui/canvas.ui')
 #UiParamWidget, _ = uic.loadUiType(curdir + '/ui/params.ui')
-#UiProbeWidget, _ = uic.loadUiType(curdir + '/ui/probeview.ui')
-#UiRuntimeWidget, _ = uic.loadUiType(curdir + '/ui/runtimeview.ui')
 
 # Control widget class - the interaction panel
 class ControlView(QtWidgets.QWidget, UiControlWidget):
@@ -25,12 +23,11 @@ class ControlView(QtWidgets.QWidget, UiControlWidget):
         self.setupUi(self)
     def update_source(self, src):
         if src is not None:
-            print("Setting source", src)
             self.source.setText(src)
-    def processed_changed(self, checked):
-        self.processed.setEnabled(checked)
-    def live_fft_changed(self, checked):
-        self.live_fft.setEnabled(checked)
+    def update_dark(self, timestamp):
+        self.save_dark_status.setText("Latest dark frame: %s" %(time.ctime(timestamp)))
+        self.processed.setEnabled(True)
+        self.live_fft.setEnabled(True)
 
 # Canvas widget class - the frame viewer
 class Canvas(QtWidgets.QWidget, UiCanvasWidget):
@@ -62,31 +59,6 @@ class Canvas(QtWidgets.QWidget, UiCanvasWidget):
             self.vmax = frame.max()
         self.im.setImage(frame.transpose(), autolevels=False, lut=self.cmap)
         self.im.setLevels((self.vmin, self.vmax))
-
-# # Param widget class - the parameter display
-# class ParamView(QtWidgets.QWidget, UiParamWidget):
-#     """
-#     Param widget class.
-
-#     Displays all ptypy parameters.
-#     """
-#     def __init__(self):
-#         super(ParamView, self).__init__()
-#         self.setupUi(self)
-
-
-# # Probe widget class - the probe display
-# class ProbeView(QtWidgets.QWidget, UiProbeWidget):
-#     """
-#     Probe widget class.
-
-#     Displays the current probe(s).
-#     """
-#     def __init__(self, **kwargs):
-#         super(ProbeView, self).__init__()
-#         self.setupUi(self)
-#         self.complex = View(self.complexview, **kwargs)
-
 
 # # Runtime widget class - the runtime display
 # class RuntimeView(QtWidgets.QWidget, UiRuntimeWidget):
