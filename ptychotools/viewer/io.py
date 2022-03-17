@@ -74,11 +74,12 @@ class DataHandler(Qt.QObject):
         and process it
         """
         shape = (pv["dimension"][0]["size"], pv["dimension"][1]["size"])
-        self.frame = np.array(pv["value"]).reshape(shape)
+        frame = np.array(pv["value"]).reshape(shape)
         if self.processed and (self.dark is not None):
-            corrected = self.frame - self.dark
-            corrected[self.frame<self.dark] = 0
-            self.frame = corrected
+            corrected = frame - self.dark
+            corrected[frame<self.dark] = 0
+            frame = corrected
         if self.livefft:
-            self.frame = np.abs(np.fft.ifft2(self.frame))
+            frame = np.abs(np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(frame - np.mean(frame)))))
+        self.frame = np.copy(frame)
         self.newframe.emit()

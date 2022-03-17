@@ -74,6 +74,8 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.controlView.save_dark.released.connect(self.dh.save_dark_frame)
         self.controlView.processed.stateChanged.connect(self.dh.update_processed)
         self.controlView.live_fft.stateChanged.connect(self.dh.update_live_fft)
+        self.controlView.colormap.currentTextChanged.connect(self.canvas.setColormap)
+        self.canvas.scene.sigMouseMoved.connect(self.onMouseMoved)
 
     def service_started(self):
         """
@@ -96,6 +98,22 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         Update image
         """
         self.canvas.drawFrame(self.dh.frame)
+
+    def onMouseMoved(self, pos):
+        """
+        Track mouse position and display current value
+        """
+        xy = self.canvas.view.mapToView(pos)
+        xy = self.canvas.im.transform().map(xy)
+        y  = int(xy.x())
+        x  = int(xy.y())
+        sh = self.dh.frame.shape
+        if (x<0) or (y<0):
+            return
+        if (x>=sh[1]) or (y>=sh[0]):
+            return
+        v = self.dh.frame[y,x]
+        self.controlView.pixelinfo.setText("x=%d,\ty=%d,\tvalue=%.1f" %(x,y,float(v)))
 
     def cleanup(self):
         """

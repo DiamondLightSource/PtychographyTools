@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from PyQt5 import QtWidgets, Qt,  uic
+from PyQt5 import QtWidgets, QtCore, Qt,  uic
 import os, sys, time
 import matplotlib.cm as cm
 import pyqtgraph as pg
@@ -27,36 +27,46 @@ class ControlView(QtWidgets.QWidget, UiControlWidget):
     def update_dark(self, timestamp):
         self.save_dark_status.setText("Latest dark frame: %s" %(time.ctime(timestamp)))
         self.processed.setEnabled(True)
-        self.live_fft.setEnabled(True)
 
-# Canvas widget class - the frame viewer
 class Canvas(QtWidgets.QWidget, UiCanvasWidget):
     """
-    Object widget class.
+    Canvas widget class.
 
-    Displays the current object(s).
+    Displaying images.
     """
-    def __init__(self, cmap="viridis"):
+    def __init__(self, cmap="gray"):
         super(Canvas, self).__init__()
         self.setupUi(self)
         self.setColormap(cmap)
-        self.setViewBox()
+        self.setupScene()
         self.vmin = None
         self.vmax = None
 
-    def setViewBox(self):
-        vb = self.frameview.addViewBox(row=0, col=0, lockAspect=True, enableMouse=True, invertY=True)
+    def setupScene(self):
+        self.scene = self.frameview.scene()
+        self.view = pg.ViewBox(lockAspect=True, enableMouse=True, invertY=True, enableMenu=True)
+        self.view.suggestPadding = lambda *_: 0.0
+        self.frameview.setCentralItem(self.view)
         self.im = pg.ImageItem(np.zeros((128,128)), autoDownsample=True, lut=self.cmap)
-        vb.addItem(self.im)
-            
+        self.view.addItem(self.im)
+        self.frameview.setMouseTracking(True)
+        #self.frameview.setContentsMargins(QtCore.QMargins())
+                
     def setColormap(self, cmap):
-        self.cmap = getattr(cm, cmap)(np.arange(256))[:,:3] * 255
+        #N = 1000
+        #X = np.linspace(1,N*10,N)
+        C = np.arange(256)
+        #C = 255 * (X / X.max())
+        self.cmap = getattr(cm, cmap)(C)[:,:3] * 255
+        #clog = np.log(getattr(cm, cmap)(C)[:,:3])
+        #self.cmap = 255 * (clog / clog.max())
+        #print(np.log(getattr(cm, cmap)(C)[:,:3]))
 
     def drawFrame(self, frame):
-        if self.vmin is None:
-            self.vmin = frame.min()
-        if self.vmax is None:
-            self.vmax = frame.max()
+        #if self.vmin is None:
+        self.vmin = frame.min()
+        #if self.vmax is None:
+        self.vmax = frame.max()
         self.im.setImage(frame.transpose(), autolevels=False, lut=self.cmap)
         self.im.setLevels((self.vmin, self.vmax))
 
