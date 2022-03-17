@@ -39,7 +39,7 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         # Frame panel
         self.canvasFrame.layout().removeWidget(self.canvasWidget)
         self.canvasWidget.setParent(None)
-        self.canvas = Canvas()
+        self.canvas = Canvas(cmap=self.controlView.colormap.currentText(), log=self.controlView.logarithmic.isChecked())
         self.canvasFrame.layout().addWidget(self.canvas)
 
         # Connections
@@ -75,6 +75,7 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.controlView.processed.stateChanged.connect(self.dh.update_processed)
         self.controlView.live_fft.stateChanged.connect(self.dh.update_live_fft)
         self.controlView.colormap.currentTextChanged.connect(self.canvas.setColormap)
+        self.controlView.logarithmic.toggled.connect(self.canvas.setLogarithmic)
         self.canvas.scene.sigMouseMoved.connect(self.onMouseMoved)
 
     def service_started(self):

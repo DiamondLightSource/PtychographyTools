@@ -34,41 +34,57 @@ class Canvas(QtWidgets.QWidget, UiCanvasWidget):
 
     Displaying images.
     """
-    def __init__(self, cmap="gray"):
+    def __init__(self, cmap="gray", log=False):
         super(Canvas, self).__init__()
         self.setupUi(self)
-        self.setColormap(cmap)
-        self.setupScene()
         self.vmin = None
         self.vmax = None
+        self.islog = log
+        self.original = None
+        self.transformed = None
+        self.setupScene()
+        self.setColormap(cmap)
 
     def setupScene(self):
         self.scene = self.frameview.scene()
         self.view = pg.ViewBox(lockAspect=True, enableMouse=True, invertY=True, enableMenu=True)
         self.view.suggestPadding = lambda *_: 0.0
         self.frameview.setCentralItem(self.view)
-        self.im = pg.ImageItem(np.zeros((128,128)), autoDownsample=True, lut=self.cmap)
+        self.im = pg.ImageItem(np.ones((128,128)), autoDownsample=True)
         self.view.addItem(self.im)
         self.frameview.setMouseTracking(True)
-        #self.frameview.setContentsMargins(QtCore.QMargins())
                 
     def setColormap(self, cmap):
-        #N = 1000
-        #X = np.linspace(1,N*10,N)
-        C = np.arange(256)
-        #C = 255 * (X / X.max())
-        self.cmap = getattr(cm, cmap)(C)[:,:3] * 255
-        #clog = np.log(getattr(cm, cmap)(C)[:,:3])
-        #self.cmap = 255 * (clog / clog.max())
-        #print(np.log(getattr(cm, cmap)(C)[:,:3]))
+        self.cmap = getattr(cm, cmap)(np.arange(256))[:,:3] * 255
+        self.replot()
+
+    def setLogarithmic(self, status):
+        self.islog = status
+        self.replot()
+
+    def transform(self, value):
+        if self.islog:
+            trans = np.log(value+1e-5)
+        else:
+            trans = value
+        return trans
 
     def drawFrame(self, frame):
+        self.original = frame
+        self.replot()
+
+    def replot(self):
+        if self.original is None:
+            return
+        self.transformed = self.transform(self.original)
         #if self.vmin is None:
-        self.vmin = frame.min()
+        self.vmin = self.transformed.min()
         #if self.vmax is None:
-        self.vmax = frame.max()
-        self.im.setImage(frame.transpose(), autolevels=False, lut=self.cmap)
+        self.vmax = self.transformed.max()
+
+        self.im.setImage(self.transformed.transpose(), autolevels=False, lut=self.cmap)
         self.im.setLevels((self.vmin, self.vmax))
+        
 
 # # Runtime widget class - the runtime display
 # class RuntimeView(QtWidgets.QWidget, UiRuntimeWidget):
