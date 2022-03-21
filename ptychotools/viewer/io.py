@@ -68,6 +68,13 @@ class DataHandler(Qt.QObject):
             self.dark = np.copy(self.frame)
             self.darkframe.emit(time.time())
 
+    def clear_dark_frame(self):
+        """
+        Clear the dark frame
+        """
+        self.dark = None
+        self.darkframe.emit(-1)
+
     def process_frame(self, pv):
         """
         Receive detector frame from EPICS PV 

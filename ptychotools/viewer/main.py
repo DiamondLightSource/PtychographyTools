@@ -5,7 +5,6 @@ import os, sys, time
 
 # Import widgets
 from .widgets import ControlView, Canvas
-#from widgets import ObjectView, ProbeView, RuntimeView, ParamView
 
 # Import modules
 from .io import DataHandler
@@ -76,7 +75,13 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.controlView.live_fft.stateChanged.connect(self.dh.update_live_fft)
         self.controlView.colormap.currentTextChanged.connect(self.canvas.setColormap)
         self.controlView.logarithmic.toggled.connect(self.canvas.setLogarithmic)
+        self.controlView.minimum_check.stateChanged.connect(self.canvas.setAutoMin)
+        self.controlView.maximum_check.stateChanged.connect(self.canvas.setAutoMax)
+        self.controlView.minimum_edit.valueChanged.connect(self.canvas.setLevelMin)
+        self.controlView.maximum_edit.valueChanged.connect(self.canvas.setLevelMax)
         self.canvas.scene.sigMouseMoved.connect(self.onMouseMoved)
+        self.canvas.vmin_changed.connect(self.controlView.edit_minimum)
+        self.canvas.vmax_changed.connect(self.controlView.edit_maximum)
 
     def service_started(self):
         """
@@ -85,6 +90,9 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.controlView.start.setEnabled(False)
         self.controlView.stop.setEnabled(True)
         self.controlView.save_dark.setEnabled(True)
+        self.controlView.live_fft.setEnabled(True)
+        self.controlView.live_fft.setChecked(False)
+        self.controlView.processed.setChecked(False)
 
     def service_stopped(self):
         """
@@ -93,6 +101,9 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.controlView.start.setEnabled(True)
         self.controlView.stop.setEnabled(False)
         self.controlView.save_dark.setEnabled(False)
+        self.controlView.processed.setEnabled(False)
+        self.controlView.live_fft.setEnabled(False)
+        self.dh.clear_dark_frame()
 
     def draw(self):
         """
