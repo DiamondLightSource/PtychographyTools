@@ -40,6 +40,8 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.canvasWidget.setParent(None)
         self.canvas = Canvas(cmap=self.controlView.colormap.currentText(), log=self.controlView.logarithmic.isChecked())
         self.canvasFrame.layout().addWidget(self.canvas)
+        self.controlView.histitem.setImageItem(self.canvas.im)
+        print(self.controlView.histitem.getViewBox())
 
         # Connections
         self.set_connections()

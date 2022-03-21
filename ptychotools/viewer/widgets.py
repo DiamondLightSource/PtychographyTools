@@ -20,12 +20,22 @@ class ControlView(QtWidgets.QWidget, UiControlWidget):
     def __init__(self):
         super(ControlView, self).__init__()
         self.setupUi(self)
+        self.setupScene()
         self.minimum_check.stateChanged.connect(self.update_minimum)
         self.maximum_check.stateChanged.connect(self.update_maximum)
         self.minimum_edit.valueChanged.connect(self.update_minimum_slider)
         self.maximum_edit.valueChanged.connect(self.update_maximum_slider)
         self.minimum_slider.sliderMoved.connect(self.minimum_edit.setValue)
         self.maximum_slider.sliderMoved.connect(self.maximum_edit.setValue)
+    def setupScene(self):
+        #self.scene = self.histview.scene()
+        self.histitem = pg.HistogramLUTItem(orientation='horizontal', gradientPosition="bottom")
+        #self.histitem.disableAutoHistogramRange()
+        self.histview.setCentralItem(self.histitem)
+        self.histitem.vb.setMenuEnabled(False)
+        self.histitem.vb.setMouseEnabled(x=False, y=False)
+        self.histitem.setVisible(False)
+
     def update_source(self, src):
         if src is not None:
             self.source.setText(src)

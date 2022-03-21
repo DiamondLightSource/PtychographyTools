@@ -145,7 +145,7 @@
        </widget>
       </item>
       <item row="3" column="0">
-       <widget class="GraphicsLayoutWidget" name="histview">
+       <widget class="GraphicsView" name="histview">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
           <horstretch>0</horstretch>
@@ -354,9 +354,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>GraphicsLayoutWidget</class>
+   <class>GraphicsView</class>
    <extends>QGraphicsView</extends>
-   <header>pyqtgraph</header>
+   <header>pyqtgraph.widgets.GraphicsView</header>
   </customwidget>
  </customwidgets>
  <resources/>
