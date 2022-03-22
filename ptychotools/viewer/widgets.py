@@ -132,12 +132,12 @@ class Canvas(QtWidgets.QWidget, UiCanvasWidget):
 
     def setLevels(self):
         if self.automin:
-            self.vmin = self.transformed.min()
+            self.vmin = np.percentile(self.transformed,0.01)
             self.vmin_changed.emit(self.inverse(self.vmin))
         else:
             self.vmin = self.transform(self.setmin)
         if self.automax:
-            self.vmax = self.transformed.max()
+            self.vmax = np.percentile(self.transformed,99.99)
             self.vmax_changed.emit(self.inverse(self.vmax))
         else:
             self.vmax = self.transform(self.setmax)
