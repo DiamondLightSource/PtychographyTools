@@ -61,6 +61,8 @@ class ControlView(QtWidgets.QWidget, UiControlWidget):
     def update_maximum(self, state):
         self.maximum_edit.setEnabled(state == 2)
         self.maximum_slider.setEnabled(state == 2)
+        self.maximum_slider.setValue(self.maximum_edit.value())
+        self.maximum_slider.setMaximum(self.maximum_edit.value())
     def update_minimum_slider(self, value):
         if self.minimum_slider.isEnabled():
             self.minimum_slider.setValue(value)
@@ -71,8 +73,8 @@ class ControlView(QtWidgets.QWidget, UiControlWidget):
         self.minimum_edit.setValue(value)
     def edit_maximum(self, value):
         self.maximum_edit.setValue(value)
-        self.maximum_slider.setValue(value)
-        self.maximum_slider.setMaximum(value)
+        #self.maximum_slider.setValue(value)
+        #self.maximum_slider.setMaximum(value)
 
 class Canvas(QtWidgets.QWidget, UiCanvasWidget):
     """
@@ -108,27 +110,27 @@ class Canvas(QtWidgets.QWidget, UiCanvasWidget):
                 
     def setColormap(self, cmap):
         self.cmap = getattr(cm, cmap)(np.arange(256))[:,:3] * 255
-        self.replot()
+        #self.replot()
 
     def setLogarithmic(self, status):
         self.islog = status
-        self.replot()
+        #self.replot()
 
     def setAutoMin(self, state):
         self.automin = (state == 0)
-        self.replot()
+        #self.replot()
 
     def setAutoMax(self, state):
         self.automax = (state == 0)
-        self.replot()
+        #self.replot()
 
     def setLevelMin(self, value):
         self.setmin = value
-        self.replot()
+        #self.replot()
 
     def setLevelMax(self, value):
         self.setmax = value
-        self.replot()
+        #self.replot()
 
     def setLevels(self):
         if self.automin:
@@ -158,7 +160,7 @@ class Canvas(QtWidgets.QWidget, UiCanvasWidget):
 
     def drawFrame(self, frame):
         self.original = frame
-        self.replot()
+        #self.replot()
 
     def replot(self):
         if self.original is None:

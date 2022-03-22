@@ -73,7 +73,7 @@ class DataHandler(Qt.QObject):
         Save the current frame as dark
         """
         if self.frame is not None:
-            self.dark = np.copy(self.frame)
+            self.dark = self.downsample(np.copy(self.frame))
             self.darkframe.emit(time.time())
 
     def clear_dark_frame(self):
@@ -93,6 +93,12 @@ class DataHandler(Qt.QObject):
             return
         N = (frame == 65535).sum()
         self.saturated.emit(N)
+
+    def downsample(self, frame):
+        sh = frame.shape
+        ds = 4
+        ns = sh[0]//ds, sh[1]//ds
+        return frame.reshape((ns[0],ds,ns[1],ds)).sum(axis=(1,3)) // (ds**2)
         
     def process_frame(self, pv):
         """
@@ -103,6 +109,7 @@ class DataHandler(Qt.QObject):
         frame = np.array(pv["value"]).reshape(shape)
         self.count_saturated_pixels(frame)
         if self.processed and (self.dark is not None):
+            frame = self.downsample(frame)
             corrected = frame - self.dark
             corrected[frame<self.dark] = 0
             frame = corrected

@@ -96,6 +96,7 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.controlView.live_fft.setEnabled(True)
         self.controlView.live_fft.setChecked(False)
         self.controlView.processed.setChecked(False)
+        self.init_timer()
 
     def service_stopped(self):
         """
@@ -107,6 +108,15 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.controlView.processed.setEnabled(False)
         self.controlView.live_fft.setEnabled(False)
         self.dh.clear_dark_frame()
+
+    def init_timer(self):
+        """
+        Initialize reploting timer
+        """
+        self.replot_timer = QtCore.QTimer()
+        self.replot_timer.setInterval(100)
+        self.replot_timer.timeout.connect(self.canvas.replot)
+        self.replot_timer.start()
 
     def draw(self):
         """
@@ -122,6 +132,8 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         xy = self.canvas.im.transform().map(xy)
         y  = int(xy.x())
         x  = int(xy.y())
+        if self.dh.frame is None:
+            return
         sh = self.dh.frame.shape
         if (x<0) or (y<0):
             return
