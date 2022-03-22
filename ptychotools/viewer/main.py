@@ -41,7 +41,6 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.canvas = Canvas(cmap=self.controlView.colormap.currentText(), log=self.controlView.logarithmic.isChecked())
         self.canvasFrame.layout().addWidget(self.canvas)
         self.controlView.histitem.setImageItem(self.canvas.im)
-        print(self.controlView.histitem.getViewBox())
 
         # Connections
         self.set_connections()
@@ -69,6 +68,7 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.dh.disconnected.connect(self.service_stopped)
         self.dh.newframe.connect(self.draw)
         self.dh.darkframe.connect(self.controlView.update_dark)
+        self.dh.saturated.connect(self.controlView.update_saturated)
         self.controlView.start.released.connect(self.dh.start_service)
         self.controlView.stop.released.connect(self.dh.stop_service)
         self.controlView.source.textChanged.connect(self.dh.source_updated)
@@ -81,6 +81,7 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.controlView.maximum_check.stateChanged.connect(self.canvas.setAutoMax)
         self.controlView.minimum_edit.valueChanged.connect(self.canvas.setLevelMin)
         self.controlView.maximum_edit.valueChanged.connect(self.canvas.setLevelMax)
+        self.controlView.check_saturated.stateChanged.connect(self.dh.update_saturated)
         self.canvas.scene.sigMouseMoved.connect(self.onMouseMoved)
         self.canvas.vmin_changed.connect(self.controlView.edit_minimum)
         self.canvas.vmax_changed.connect(self.controlView.edit_maximum)

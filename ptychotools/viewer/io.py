@@ -17,6 +17,7 @@ class DataHandler(Qt.QObject):
     darkframe = Qt.pyqtSignal(int)
     connected = Qt.pyqtSignal()
     disconnected = Qt.pyqtSignal()
+    saturated = Qt.pyqtSignal(int)
     def __init__(self, src=None):
         super(DataHandler, self).__init__()
         self.ctx = Context("pva", nt=False)
@@ -26,6 +27,7 @@ class DataHandler(Qt.QObject):
         self.frame = None
         self.processed = False
         self.livefft = False
+        self.check_saturation = False
 
     def start_service(self):
         """
@@ -60,6 +62,12 @@ class DataHandler(Qt.QObject):
         """
         self.livefft = (state == 2)
 
+    def update_saturated(self, state):
+        """
+        Toggle status for checking saturation
+        """
+        self.check_saturation = (state == 2)
+
     def save_dark_frame(self):
         """
         Save the current frame as dark
@@ -75,6 +83,17 @@ class DataHandler(Qt.QObject):
         self.dark = None
         self.darkframe.emit(-1)
 
+    def count_saturated_pixels(self, frame):
+        """
+        Check how many pixels are saturated
+        assuming that images are uint16
+        """
+        if not self.check_saturation:
+            self.saturated.emit(-1)
+            return
+        N = (frame == 65535).sum()
+        self.saturated.emit(N)
+        
     def process_frame(self, pv):
         """
         Receive detector frame from EPICS PV 
@@ -82,6 +101,7 @@ class DataHandler(Qt.QObject):
         """
         shape = (pv["dimension"][0]["size"], pv["dimension"][1]["size"])
         frame = np.array(pv["value"]).reshape(shape)
+        self.count_saturated_pixels(frame)
         if self.processed and (self.dark is not None):
             corrected = frame - self.dark
             corrected[frame<self.dark] = 0

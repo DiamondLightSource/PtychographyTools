@@ -35,7 +35,6 @@ class ControlView(QtWidgets.QWidget, UiControlWidget):
         self.histitem.vb.setMenuEnabled(False)
         self.histitem.vb.setMouseEnabled(x=False, y=False)
         self.histitem.setVisible(False)
-
     def update_source(self, src):
         if src is not None:
             self.source.setText(src)
@@ -46,6 +45,16 @@ class ControlView(QtWidgets.QWidget, UiControlWidget):
         else:
             self.save_dark_status.setText("Latest dark frame: %s" %(time.ctime(timestamp)))
             self.processed.setEnabled(True)
+    def update_saturated(self, count):
+        if count < 0:
+            self.label_saturated.setText(" -")
+            self.control_group.setStyleSheet("")
+        elif count == 0:
+            self.label_saturated.setText("%d" %count)
+            self.control_group.setStyleSheet("")
+        else:
+            self.label_saturated.setText("%d" %count)
+            self.control_group.setStyleSheet("background-color: rgb(255,0,0)")
     def update_minimum(self, state):
         self.minimum_edit.setEnabled(state == 2)
         self.minimum_slider.setEnabled(state == 2)
