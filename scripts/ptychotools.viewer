@@ -3,14 +3,14 @@ from PyQt5 import QtCore, QtWidgets
 from ptychotools.viewer import Viewer
 import sys, argparse
 
-parser = argparse.ArgumentParser(prog="Ptychography Viewer")
+parser = argparse.ArgumentParser(prog="EPCIS PV Array Viewer")
 parser.add_argument("-i", "--source-input", dest="source", default=None, type=str, help="Option to provide array PV")
-parser.add_argument("-s", "--style", default="light", help="Style of the Viewer GUI, 'light or 'dark'")
+parser.add_argument("-s", "--style", default="light", help="Option to change style of viewer, 'light or 'dark'")
 args = parser.parse_args()
 
 QtCore.QCoreApplication.setOrganizationName("Diamond Light Source Ltd")
 QtCore.QCoreApplication.setOrganizationDomain("http://diamond.ac.uk")
-QtCore.QCoreApplication.setApplicationName("DLS Ptychography Beamline Viewer")
+QtCore.QCoreApplication.setApplicationName("EPICS PV Array Viewer")
 app = QtWidgets.QApplication(sys.argv)
 viewer = Viewer(args)
 app.aboutToQuit.connect(viewer.cleanup)

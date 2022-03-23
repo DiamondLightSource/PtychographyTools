@@ -29,7 +29,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>DLS Ptychography Beamline Viewer</string>
+   <string>EPICS PV Array Viewer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="accessibleName">
