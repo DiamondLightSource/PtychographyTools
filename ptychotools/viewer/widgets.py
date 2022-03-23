@@ -43,7 +43,7 @@ class ControlView(QtWidgets.QWidget, UiControlWidget):
             self.save_dark_status.setText("")
             self.processed.setEnabled(False)
         else:
-            self.save_dark_status.setText("Latest dark frame: %s" %(time.ctime(timestamp)))
+            self.save_dark_status.setText("Latest dark: %s" %(time.ctime(timestamp)))
             self.processed.setEnabled(True)
     def update_saturated(self, count):
         if count < 0:
@@ -73,8 +73,6 @@ class ControlView(QtWidgets.QWidget, UiControlWidget):
         self.minimum_edit.setValue(value)
     def edit_maximum(self, value):
         self.maximum_edit.setValue(value)
-        #self.maximum_slider.setValue(value)
-        #self.maximum_slider.setMaximum(value)
 
 class Canvas(QtWidgets.QWidget, UiCanvasWidget):
     """
@@ -96,6 +94,8 @@ class Canvas(QtWidgets.QWidget, UiCanvasWidget):
         self.islog = log
         self.original = None
         self.transformed = None
+        self.shape = (128,128)
+        self.wait_for_autorange = False
         self.setupScene()
         self.setColormap(cmap)
 
@@ -103,34 +103,30 @@ class Canvas(QtWidgets.QWidget, UiCanvasWidget):
         self.scene = self.frameview.scene()
         self.view = pg.ViewBox(lockAspect=True, enableMouse=True, invertY=True, enableMenu=True)
         self.view.suggestPadding = lambda *_: 0.0
+        #self.view.enableAutoRange()
+        #self.view.setAutoVisible(x=True,y=True)
         self.frameview.setCentralItem(self.view)
-        self.im = pg.ImageItem(np.ones((128,128)), autoDownsample=True)
+        self.im = pg.ImageItem(np.ones(self.shape), autoDownsample=True)
         self.view.addItem(self.im)
         self.frameview.setMouseTracking(True)
                 
     def setColormap(self, cmap):
         self.cmap = getattr(cm, cmap)(np.arange(256))[:,:3] * 255
-        #self.replot()
 
     def setLogarithmic(self, status):
         self.islog = status
-        #self.replot()
 
     def setAutoMin(self, state):
         self.automin = (state == 0)
-        #self.replot()
 
     def setAutoMax(self, state):
         self.automax = (state == 0)
-        #self.replot()
 
     def setLevelMin(self, value):
         self.setmin = value
-        #self.replot()
 
     def setLevelMax(self, value):
         self.setmax = value
-        #self.replot()
 
     def setLevels(self):
         if self.automin:
@@ -160,12 +156,15 @@ class Canvas(QtWidgets.QWidget, UiCanvasWidget):
 
     def drawFrame(self, frame):
         self.original = frame
-        #self.replot()
 
     def replot(self):
         if self.original is None:
             return
+        shape_changed = (self.shape != self.original.shape)
+        self.shape = self.original.shape
         self.transformed = self.transform(self.original)
         self.setLevels()
         self.im.setImage(self.transformed.transpose(), autolevels=False, lut=self.cmap)
         self.im.setLevels((self.vmin, self.vmax))
+        if shape_changed:
+            self.view.autoRange()

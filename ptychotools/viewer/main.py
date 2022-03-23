@@ -75,6 +75,8 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
         self.controlView.save_dark.released.connect(self.dh.save_dark_frame)
         self.controlView.processed.stateChanged.connect(self.dh.update_processed)
         self.controlView.live_fft.stateChanged.connect(self.dh.update_live_fft)
+        self.controlView.fps.returnPressed.connect(self.update_timer_interval)
+        self.controlView.binning.currentTextChanged.connect(self.dh.update_binning)
         self.controlView.colormap.currentTextChanged.connect(self.canvas.setColormap)
         self.controlView.logarithmic.toggled.connect(self.canvas.setLogarithmic)
         self.controlView.minimum_check.stateChanged.connect(self.canvas.setAutoMin)
@@ -111,12 +113,23 @@ class Viewer(QtWidgets.QMainWindow, UiMainWindow):
 
     def init_timer(self):
         """
-        Initialize reploting timer
+        Initialize reploting timer.
         """
         self.replot_timer = QtCore.QTimer()
-        self.replot_timer.setInterval(100)
+        self.update_timer_interval()
         self.replot_timer.timeout.connect(self.canvas.replot)
         self.replot_timer.start()
+
+    def update_timer_interval(self):
+        """
+        Change the interval of the replot timer.
+        """
+        x = self.controlView.fps.text()
+        if not x.isnumeric():
+            return
+        fps = int(x)
+        tms = 1./fps * 1e3
+        self.replot_timer.setInterval(tms)
 
     def draw(self):
         """

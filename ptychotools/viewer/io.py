@@ -28,6 +28,7 @@ class DataHandler(Qt.QObject):
         self.processed = False
         self.livefft = False
         self.check_saturation = False
+        self.binning = 1 
 
     def start_service(self):
         """
@@ -62,6 +63,12 @@ class DataHandler(Qt.QObject):
         """
         self.livefft = (state == 2)
 
+    def update_binning(self, binfactor):
+        """
+        Update binning factor
+        """
+        self.binning = int(binfactor)
+        
     def update_saturated(self, state):
         """
         Toggle status for checking saturation
@@ -73,7 +80,7 @@ class DataHandler(Qt.QObject):
         Save the current frame as dark
         """
         if self.frame is not None:
-            self.dark = self.downsample(np.copy(self.frame))
+            self.dark = np.copy(self.rawframe)
             self.darkframe.emit(time.time())
 
     def clear_dark_frame(self):
@@ -96,7 +103,7 @@ class DataHandler(Qt.QObject):
 
     def downsample(self, frame):
         sh = frame.shape
-        ds = 4
+        ds = self.binning
         ns = sh[0]//ds, sh[1]//ds
         return frame.reshape((ns[0],ds,ns[1],ds)).sum(axis=(1,3)) // (ds**2)
         
@@ -108,10 +115,14 @@ class DataHandler(Qt.QObject):
         shape = (pv["dimension"][0]["size"], pv["dimension"][1]["size"])
         frame = np.array(pv["value"]).reshape(shape)
         self.count_saturated_pixels(frame)
+        self.rawframe = np.copy(frame)
         if self.processed and (self.dark is not None):
-            frame = self.downsample(frame)
-            corrected = frame - self.dark
-            corrected[frame<self.dark] = 0
+            frame = self.downsample(self.rawframe)
+            dark = self.downsample(self.dark)
+            if not (frame.shape == dark.shape):
+                return
+            corrected = frame - dark
+            corrected[frame<dark] = 0
             frame = corrected
         if self.livefft:
             frame = np.abs(np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(frame - np.mean(frame)))))
