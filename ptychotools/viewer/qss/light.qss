@@ -1,8 +1,0 @@
-QFrame[accessibleName="specialframe"] {
-    border: 0px;
-}
-
-QFrame[accessibleName="pyqtframe"] {
-   border: 1px solid #999999;
-}
-
