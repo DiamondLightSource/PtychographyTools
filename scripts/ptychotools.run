@@ -131,6 +131,9 @@ else:
     log(3, "Autosave is off. No output will be saved.")
 #parameters.io.benchmark = "all"
 
+# Use DLS format to make sure "grids" are saved to .ptyr file
+parameters.io.rformat = "dls"
+
 def load_gpu_engines():
     try:
         ptypy.load_gpu_engines("cuda")
