@@ -154,35 +154,35 @@ else
     
     if (($REPEAT > 0));
     then
-      for i in $(eval echo "{1..$REPEAT..1}")
-      do
-          echo "This is reconstruction $i of a total of $REPEAT" >> $LOG_FILE
-          ii=$(printf "%03d" $i)
-          echo "$ii" >> $LOG_FILE
-          mpi_params="$mpi_proc_cmd -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER/$ii $EXTRA_ARGS"
-          echo "The mpi params are $mpi_params" >> $LOG_FILE
-          mpirun $mpi_params >> $LOG_FILE
-          reconstruction_exit_code=$?
-      done
+        for i in $(eval echo "{1..$REPEAT..1}")
+        do
+            echo "This is reconstruction $i of a total of $REPEAT" >> $LOG_FILE
+            ii=$(printf "%03d" $i)
+            echo "$ii" >> $LOG_FILE
+            mpi_params="$mpi_proc_cmd -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER/$ii $EXTRA_ARGS"
+            echo "The mpi params are $mpi_params" >> $LOG_FILE
+            mpirun $mpi_params >> $LOG_FILE
+            reconstruction_exit_code=$?
+        done
     else
-      mpi_params="$mpi_proc_cmd -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
-      echo "The mpi params are $mpi_params" >> $LOG_FILE
-      mpirun $mpi_params >> $LOG_FILE
-      exit_code=$?
+        mpi_params="$mpi_proc_cmd -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
+        echo "The mpi params are $mpi_params" >> $LOG_FILE
+        mpirun $mpi_params >> $LOG_FILE
+        exit_code=$?
     fi
 
     if (($exit_code == 0));
     then
-      if $PROPAGATE;
-      then
-          # how do we get $PTYR_FILE
-          PTYR_FILE="$OUTPUT_FOLDER/scan_$IDENTIFIER/scan_$IDENTIFIER.ptyr" # this is a bit hardcoded...Is it a standard?
-          ptychotools.propagate -i $PTYR_FILE -o $OUTPUT_FOLDER/scan_$IDENTIFIER/ -z "$ZMIN $ZMAX" >> $LOG_FILE
-          exit_code=$?
-      fi
+        if $PROPAGATE;
+        then
+            # how do we get $PTYR_FILE
+            PTYR_FILE="$OUTPUT_FOLDER/scan_$IDENTIFIER/scan_$IDENTIFIER.ptyr" # this is a bit hardcoded...Is it a standard?
+            ptychotools.propagate -i $PTYR_FILE -o $OUTPUT_FOLDER/scan_$IDENTIFIER/ -z "$ZMIN $ZMAX" >> $LOG_FILE
+            exit_code=$?
+        fi
     fi
 
-  fi
+fi
 log "Processing for this file is all in: $OUTPUT_FOLDER" $LOG_FILE
 log "################     PROCESSING COMPLETE exit_code ${exit_code}     #############" $LOG_FILE
 

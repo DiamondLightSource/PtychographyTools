@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PTYCHOTOOLS_PACKAGE_VERSION="0.1.1"
+PTYCHOTOOLS_PACKAGE_VERSION="0.1.2"
 
 log() {
     # logs a message ($1) to a  file ($2)
