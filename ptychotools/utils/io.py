@@ -95,13 +95,16 @@ def convert_ptyr_to_mapping(file_path, border=80, rmramp=True, rmradius=0.5, rmi
         data *= np.exp(1j * phaseshift)
         data = data.reshape(data.shape+(1, 1))
 
-        magnitudes_path = file_path.split('.')[0] + obj_name + '_mag.nxs'
+        # Get filename sans extension.
+        file_path_base = os.path.splitext(file_path)[0]
+
+        magnitudes_path = file_path_base + obj_name + '_mag.nxs'
         write_dataset_to_file(np.abs(data), magnitudes_path, obj_name, x, y, tag='mag_')
 
-        phase_path = file_path.split('.')[0] + obj_name+'_phase.nxs'
+        phase_path = file_path_base + obj_name + '_phase.nxs'
         write_dataset_to_file(np.angle(data), phase_path, obj_name, x, y, tag='phase_')
 
-        complex_path = file_path.split('.')[0] + obj_name+'_complex.nxs'
+        complex_path = file_path_base + obj_name + '_complex.nxs'
         write_dataset_to_file(data, complex_path, obj_name, x, y, tag='complex_', dtype=np.complex128)
 
         complex_paths.append(complex_path)
