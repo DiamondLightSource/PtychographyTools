@@ -175,6 +175,12 @@ if args.use_gpu:
             load_gpu_engines()
             engine.name = "EPIE_pycuda"
             log(3, "Replacing the EPIE engine with the gpu-accelerated EPIE_pycuda engine")
+        elif (engine.name == "LBFGS_pycuda") or (engine.name == "LBFGS"):
+            try:
+                from ptypy.custom import LBFGS_pycuda
+            except ImportError:
+                sys.exit("Could not load LBFGS pycuda engine")
+            engine.name = "LBFGS_pycuda"
         elif engine.name == 'DM_glad':
             try:
                 from ptychotools.engines import DM_glad_cuda
