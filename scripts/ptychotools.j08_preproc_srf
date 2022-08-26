@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Pre-processing of ptychography data collected at I08-1 endstation
 """
