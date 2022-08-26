@@ -1,0 +1,448 @@
+"""
+Pre-processing of ptychography data collected at I08-1 endstation
+"""
+
+import os
+import sys
+import json
+import time
+import h5py
+import argparse
+import subprocess
+import jax.numpy as jnp
+import jax
+import numpy as np
+
+from cupy.cuda.nvtx import RangePush, RangePop
+
+import srf as neo
+from srf.core import operators as ops
+
+from copy import copy
+
+parser = argparse.ArgumentParser(prog="ptychotools.dawn_processing", description="Pre-processing of ptychography data collected at I08-1 endstation")
+parser.add_argument("-i", "--input", type=str,
+                    help="Input file path to nexus file")
+parser.add_argument("-o", "--output", type=str, 
+                    help="Output file path for processed file")
+parser.add_argument("-d", "--dataset", type=str,
+                    help="Key to dataset inside nexus file")
+parser.add_argument("-a", "--darkfield", type=str,
+                    help="Key to darkfield inside nexus file")
+parser.add_argument("-r", "--scanrank", type=int,
+                    help="The rank of the scan")
+parser.add_argument("--posx", type=str, dest="posx",
+                    help="Key to X motor position (readback values)")
+parser.add_argument("--posy", type=str, dest="posy",
+                    help="Key to Y motor position (readback values)")
+parser.add_argument("--posx-set", type=str, dest="posx_set",
+                    help="Key to X motor position (set values)")
+parser.add_argument("--posy-set", type=str, dest="posy_set",
+                    help="Key to Y motor position (set values)")
+parser.add_argument("-s", "--shape-check", dest="shape", type=bool,
+                    help="Check if diffraction data and motor positions match in shape") 
+parser.add_argument("-m", "--multi-trigger-check", dest="multi", type=bool,
+                    help="Check if there are mutliple readback motor positions per set motor position")
+parser.add_argument("-t", "--topup-check", dest="topup", type=bool, 
+                    help="Check if the scan went through the top-up and fix the data")
+parser.add_argument("-p", "--padding", type=str,
+                    help="Padding the data, provide 4 comma-seperated integers for top,bottom,left,right")
+parser.add_argument("-c", "--cropping", type=str,
+                    help="Cropping the data, provide 4 comma-separated integers for top,bottom,left,right")
+parser.add_argument("-b", "--binning", type=int,
+                    help="Re-binning the data by a given factor, ingoing shape needs to be divisble by that factor")
+parser.add_argument("-f", "--flip-transpose", dest="flip_or_transpose", type=int, default=0, 
+                    help="Flip and/or transpose data according to given orientation (same defintion used in ptypy)")
+args = parser.parse_args()
+
+# Parse processing pargs
+processed_filepath = args.output
+nexus_filepath = args.input
+dataset = args.dataset
+darkfield = args.darkfield
+scan_rank = args.scanrank
+
+# Start timer
+t0 = time.time()
+
+# Convert padding/cropping string
+if args.padding:
+    args.padding = tuple(map(int, args.padding.split(",")))
+if args.cropping:
+    args.cropping = tuple(map(int, args.cropping.split(",")))
+
+# If the target already exists, there is nothing to do
+if (os.path.isfile(processed_filepath)):
+    sys.exit("Nothing to do here, a processed file already exists: %s" %processed_filepath)
+
+
+
+def subtract_darkframe(frame, dark):
+    """
+    subtracts a dark image from a given frame
+    and replaces negative values with zeros.
+    """
+    corrected = frame - dark
+    corrected = jnp.where(corrected>0, corrected, 0)
+    # corrected = corrected.at[frame<dark].set(0)
+    return corrected
+
+def padding_frame(frame, pad_width):
+    t,b,l,r = pad_width
+    return np.pad(frame, ((t,b),(l,r)))
+
+def cropping_frame(frame, crop_length):
+    crop = np.copy(crop_length)
+    crop[1] *= -1
+    crop[3] *= -1
+    crop = [None if l==0 else l for l in crop]
+    t,b,l,r = crop
+    return frame[slice(t,b),slice(l,r)]
+
+def binning_frame(frame, binfact):
+    height, width = frame.shape
+    return frame.reshape((height//binfact, binfact, width//binfact, binfact)).sum(axis=(1,3))
+
+def process_frame(frame, padding=None, cropping=None, binning=None):
+    if padding:
+        frame = padding_frame(frame, args.padding)
+        #print("After padding, the shape is: ", frame.shape)
+    if cropping:
+        frame = cropping_frame(frame, args.cropping)
+        #print("After cropping, the shape is: ", frame.shape)
+    if binning:
+        frame = binning_frame(frame, args.binning)
+        #print("After binning, the shape is: ", frame.shape)
+    return frame
+
+
+
+def segment_init(pf, nf, seg: neo.Builder):
+    # Write dark-processed data into a new file
+
+    # Data handles
+    raw = nf[dataset]
+    dark = nf[darkfield]
+    dark0 = jnp.array(dark[0])
+
+    # Calculate target shape
+    sh = np.array(raw.shape)
+    print("Original shape is: ", sh)
+    if args.padding:
+        sh[-2] += (args.padding[0] + args.padding[1])
+        sh[-1] += (args.padding[2] + args.padding[3])
+        print("After padding, the shape will be: ", sh)
+    if args.cropping:
+        sh[-2] -= (args.cropping[0] + args.cropping[1])
+        sh[-1] -= (args.cropping[2] + args.cropping[3])
+        print("After cropping, the shape will be: ", sh)
+    if args.binning:
+        sh[-2] /= args.binning
+        sh[-1] /= args.binning
+        print("After binning, the shape will be: ", sh)
+
+    # Determine target dtype
+    raw_data_max = raw[0].max()
+    if args.binning:
+        raw_data_max *= (args.binning * args.binning)
+    if (raw_data_max < np.iinfo(raw.dtype).max):
+        target_dtype = raw.dtype
+    else:
+        target_dtype = np.uint32
+    print("The target data type is ", target_dtype)
+
+    # Create processed data
+    print("d shape=", sh)
+    d = pf.create_dataset("processed/result/data", sh, dtype=target_dtype)
+
+    f_darkframe = jax.jit(lambda x: subtract_darkframe(x, dark0))
+    subtract_darkframes = jax.vmap(f_darkframe)
+    f_process = jax.jit(lambda x: process_frame(x, args.padding, args.cropping, args.binning))
+    process_frames = jax.vmap(f_process)
+
+
+    def process_frames_next(x):
+        (frames, kji) = x
+        #print("shapes, dark0:{}, frames:{}".format(dark0.shape, frames.shape))
+        RangePush("DarkFrames")
+        f_m_d = subtract_darkframes(frames).block_until_ready()
+        RangePop()
+        RangePush("Process Frame Batch")
+        frames_out = process_frames(f_m_d).block_until_ready()
+        RangePop()
+        return (frames_out, kji)
+
+    def sink_on_next(x):
+        (frames_i, kji) = x
+        RangePush("GPU -> CPU")
+        frames_np = np.array(frames_i)
+        RangePop()
+        #print("kji=", kji)
+        RangePush("CPU -> HDF5")
+        for (n,kji_n) in enumerate(kji):
+            frame_i = frames_np[n]
+            if scan_rank == 3:
+                (k,j,i) = kji_n
+                d[k,j,i] = np.array(frame_i)
+            if scan_rank == 2:
+                (j,i) = kji_n
+                d[j,i] = np.array(frame_i)
+            if scan_rank == 1:
+                (i) = kji_n
+                d[i] = np.array(frame_i)
+
+        RangePop()
+
+    def sink_on_error(e):
+        print("SINK ERROR: {}".format(e))
+
+    def sink_on_complete():
+        print("SINK COMPLETE")
+
+    def batched(x_in, x_out):
+        B = 20
+        batched.i = 0
+        batched.kji = []
+
+        def batched_on_next(x):
+        
+            (frame_i, kji) = x
+            # pre-allocate batched_array
+            if batched.i == 0:
+                batched.frame_shape = frame_i.shape
+                batched.x = jnp.zeros((B, *batched.frame_shape))
+
+            batched.x = batched.x.at[batched.i].set(frame_i)
+            batched.kji.append(kji)
+
+            batched.i += 1
+            del frame_i
+            if batched.i == B:
+                batched.i = 0
+                kji_batched = copy(batched.kji)
+                batched.kji = []
+                return (batched.x, kji_batched)
+
+        def batched_on_completed():
+            return (batched.x[:batched.i], batched.kji)
+
+        x_in.pipe(ops.map(batched_on_next), ops.filter(lambda x: not isinstance(x, type(None))),
+                  ops.on_completed(batched_on_completed)).subscribe(x_out)
+
+    def source_fn():
+        # Dark correction and write to processed data
+        if scan_rank == 3:
+            for k in range(raw.shape[0]):
+                for j in range(raw.shape[1]):
+                    for i in range(raw.shape[2]):
+                        yield (raw[k,j,i], (k,j,i))
+                        # frame = subtract_darkframe(raw[k,j,i], dark[0])
+                        # d[k,j,i] = process_frame(frame, args.padding, args.cropping, args.binning)
+
+        elif scan_rank == 2:
+            for j in range(raw.shape[0]):
+                for i in range(raw.shape[1]):
+                    yield (raw[j,i], (j,i))
+                    # frame = subtract_darkframe(raw[j,i], dark[0])
+                    # d[j,i] = process_frame(frame, args.padding, args.cropping, args.binning)
+
+        elif scan_rank == 1:
+            for i in range(raw.shape[0]):
+                yield (raw[i], (i))
+                # frame = subtract_darkframe(raw[i], dark[0])
+                # d[i] = process_frame(frame, args.padding, args.cropping, args.binning)
+        else:
+            sys.exit("Unknown scan rank: %d" %scan_rank)
+        print("Dark correction finished.")
+
+
+    def jaxify_fn(frame_kji):
+        (frame, kji) = frame_kji
+        RangePush("HDF5 -> GPU")
+        val = (jnp.array(frame).block_until_ready(), kji)
+        RangePop()
+        return val
+
+    source = seg.make_source("source", source_fn())
+    jaxify_node = seg.make_node("jaxify", jaxify_fn)
+    batching_node = seg.make_node_full("batched", batched)
+    process_node = seg.make_node('process', process_frames_next)
+    sink = seg.make_sink("sink", sink_on_next, sink_on_error, sink_on_complete)
+
+    seg.make_edge(source, jaxify_node)
+    seg.make_edge(jaxify_node, batching_node)
+    seg.make_edge(batching_node, process_node)
+    seg.make_edge(process_node, sink)
+
+
+
+# RangePush("Processing Input Files")
+# RangePop()
+
+with h5py.File(processed_filepath, "w") as pf:
+    with h5py.File(nexus_filepath, "r") as nf:
+        # build segments
+        # Create link to nexus file
+
+        if False:
+            # Data handles
+            raw = nf[dataset]
+            dark = nf[darkfield]
+
+            # Calculate target shape
+            sh = np.array(raw.shape)
+            print("Original shape is: ", sh)
+            if args.padding:
+                sh[-2] += (args.padding[0] + args.padding[1])
+                sh[-1] += (args.padding[2] + args.padding[3])
+                print("After padding, the shape will be: ", sh)
+            if args.cropping:
+                sh[-2] -= (args.cropping[0] + args.cropping[1])
+                sh[-1] -= (args.cropping[2] + args.cropping[3])
+                print("After cropping, the shape will be: ", sh)
+            if args.binning:
+                sh[-2] /= args.binning
+                sh[-1] /= args.binning
+                print("After binning, the shape will be: ", sh)
+
+            # Determine target dtype
+            raw_data_max = raw[0].max()
+            if args.binning:
+                raw_data_max *= (args.binning * args.binning)
+            if (raw_data_max < np.iinfo(raw.dtype).max):
+                target_dtype = raw.dtype
+            else:
+                target_dtype = np.uint32
+            print("The target data type is ", target_dtype)
+
+            # Create processed data
+            d = pf.create_dataset("processed/result/data", sh, dtype=target_dtype)
+
+            dark0 = jnp.array(dark[0])
+            subtract_darkframes = jax.vmap(jax.jit(lambda x: subtract_darkframe(x, dark0)))
+            process_frames = jax.vmap(jax.jit(lambda x: process_frame(x, args.padding, args.cropping, args.binning)))
+
+            frame_shape = raw[0].shape
+            frames = jnp.zeros((2, *frame_shape))
+            frames = frames.at[0].set(raw[0])
+            frames = frames.at[1].set(raw[1])
+
+            a = process_frames(subtract_darkframes(frames))
+            print("a=", a)
+
+            # sys.exit(1)
+
+        pipeline = neo.Pipeline()
+
+        pipeline.make_segment("my_seg", lambda x: segment_init(pf, nf, x))
+
+        options = neo.Options()
+
+        # Set to 1 thread
+        options.topology.user_cpuset = "0"
+
+        executor = neo.Executor(options)
+
+        executor.register_pipeline(pipeline)
+
+        executor.start()
+
+        executor.join()
+
+        print("Complete")
+
+        pf["entry"] = h5py.ExternalLink(nexus_filepath, "entry")
+        print("Linked /entry from original nexus file into processed file.")
+
+
+# Check if motor positions have been provided
+if (args.posx is None) and (args.posy is None):
+    sys.exit("No key to motor positions (readback values) provided, will terminate processing here")
+if (args.posx_set is None) and (args.posy_set is None):
+    sys.exit("No key to motor positions (set values) provided, will terminate processing here")
+print("Motor positions provided, continue with corrections...")
+
+# Parse motor positions
+with h5py.File(args.output, "r") as f:
+    posx = f[args.posx][:].squeeze()
+    posy = f[args.posy][:].squeeze()
+    posx_set = f[args.posx_set][:].squeeze()
+    posy_set = f[args.posy_set][:].squeeze()
+posx_original = np.copy(posx)
+posy_original = np.copy(posy)
+print("Readback and set values loaded.")
+
+# Scan rank
+if (posx.ndim == 1):
+    scan_rank = 1
+    print("Scan rank has been reset to 1")
+print("The scan rank is ", scan_rank)
+
+# Make sure that readback values include leading dimension
+if (scan_rank == 1):
+    posx = np.expand_dims(posx, axis=0)
+    posy = np.expand_dims(posy, axis=0)
+print("Readback shape is ", posx.shape)
+
+# Calculate origin
+origin_x = posx_set[0]
+origin_y = posy_set[0]
+print("Origin of set values is (x,y) = (%f,%f)" %(origin_x,origin_y))
+
+# Detect type of scan
+is_mapped_arb    = (posx.ndim == 2) and (posy.ndim == 2)
+is_mapped_raster = (posx.ndim == 3) and (posy.ndim == 3)
+if not (is_mapped_arb or is_mapped_raster):
+    sys.exit("Could not detect layout of motor positions, will terminate here")
+print("A scan type has been detected (arb=%d, raster=%d)" %(int(is_mapped_arb),int(is_mapped_raster)))
+
+# Synchronise readback/set values
+if is_mapped_arb:
+    posx -= (posx[0,0] - origin_x)
+    posy -= (posy[0,0] - origin_y)
+if is_mapped_raster:
+    posx -= (posx[0,0,0] - origin_x)
+    posy -= (posy[0,0,0] - origin_y)
+print("Readback values have been synchronised to match set values")
+
+# Check if the readback have been triggered multiple times
+if args.multi and is_mapped_arb:
+    ratio_x = posx.shape[1] // len(posx_set)
+    if ratio_x > 1:
+        posx = posx[:,::ratio_x]
+        print("The readback values (x) have been triggered multiple times, should be fixed now")
+    ratio_y = posy.shape[1] // len(posy_set)
+    if ratio_y > 1:
+        posy = posy[:,::ratio_y]
+        print("The readback values (y) have been triggered multiple times, should be fixed now")
+
+# Check if diffraction data and motor positions match in shape
+with h5py.File(args.output, "r") as f:
+    nr_data_frames = f[args.dataset].shape[args.scanrank-1]
+if args.shape and is_mapped_arb:
+    print(nr_data_frames, posx.shape)
+    if (nr_data_frames < posx.shape[1]):
+        posx = posx[:,:nr_data_frames]
+        print("There was a shape mismatch between the data and the readback values (x), should be fixed now")
+        print("posx shape is", posx.shape)
+    if (nr_data_frames < posy.shape[1]):
+        posy = posy[:,:nr_data_frames]
+        print("There was a shape mismatch between the data and the readback values (y), should be fixed now")
+        print("posy shape is", posy.shape)
+
+# Squeeze
+if args.scanrank == 1:
+    posx = posx.squeeze()
+    posy = posy.squeeze()
+
+# Store processed motor positions
+with h5py.File(args.output, "r+") as f:
+    try:
+        del f["processed/result/posx"]
+        del f["processed/result/posy"]
+    except:
+        pass
+    f["processed/result/posx"] = posx
+    f["processed/result/posy"] = posy
+
+print("Total time for processing %d frames = %d seconds" %(nr_data_frames, time.time() - t0))
