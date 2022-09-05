@@ -29,6 +29,8 @@ setup(
              'scripts/ptychotools.update_mask_file',
              'scripts/ptychotools.write_dawn_processing_bean',
              'scripts/ptychotools.j08_preproc',
+             'scripts/ptychotools.j08_preproc_srf',
+             'scripts/ptychotools.j08_preproc_launcher',
              'scripts/ptychotools.utils',
              'scripts/ptychotools.combine_spectro_scans',
              'scripts/ptychotools.combine_tomo_scans',
