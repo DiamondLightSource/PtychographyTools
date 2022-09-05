@@ -76,9 +76,14 @@ while getopts "hqs:z:j:i:o:gv:n:p:r:V:" opt; do
   esac
 done
 
+echo "Doing module load $PTYPY_VERSION" >> "$LOG_FILE"
+
 module load $PTYPY_VERSION >> "$LOG_FILE"
+let rc=$?
 
 source ptychotools.utils
+
+log "rc from module load was: $rc" $LOG_FILE
 
 log "This is ptychotools package version $PTYCHOTOOLS_PACKAGE_VERSION" $LOG_FILE
 
