@@ -78,8 +78,15 @@ done
 
 echo "Doing module load $PTYPY_VERSION" >> "$LOG_FILE"
 
+
 module load $PTYPY_VERSION >> "$LOG_FILE"
 let rc=$?
+
+export PATH=/home/kbp43231/22/PtychographyTools/scripts:${PATH}
+export PYTHONPATH=/home/kbp43231/22/PtychographyTools:${PYTHONPATH}
+
+echo "PATH now" ${PATH} >> "$LOG_FILE"
+echo "PYTHONPATH now" ${PYTHONPATH} >> "$LOG_FILE"
 
 source ptychotools.utils
 

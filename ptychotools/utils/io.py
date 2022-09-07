@@ -73,6 +73,9 @@ def convert_ptyr_to_mapping(file_path, border=80, rmramp=True, rmradius=0.5, rmi
     :return: dictionary with lists containing paths to 'complex', 'magnitude' and 'phase' nexus formatted file paths
     '''
 
+    PTYCHOTOOLS_PACKAGE_VERSION = "0.1.4"
+    log(3, f"This is ptychotools package version {PTYCHOTOOLS_PACKAGE_VERSION} file {__file__}")
+
     fread = h5.File(file_path, 'r')
     obj_keys = '/content/obj'
     complex_paths = []
@@ -106,6 +109,10 @@ def convert_ptyr_to_mapping(file_path, border=80, rmramp=True, rmradius=0.5, rmi
 
         complex_path = file_path_base + obj_name + '_complex.nxs'
         write_dataset_to_file(data, complex_path, obj_name, x, y, tag='complex_', dtype=np.complex128)
+
+        log(3, f"magnitudes_path {magnitudes_path}")
+        log(3, f"phase_paths {phase_paths}")
+        log(3, f"complex_path {complex_path}")
 
         complex_paths.append(complex_path)
         phase_paths.append(phase_paths)
