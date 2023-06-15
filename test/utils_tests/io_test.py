@@ -61,7 +61,7 @@ class IoTest(unittest.TestCase):
     @unittest.skip("needs ptypy")
     def test_write_dataset_to_file(self):
         # this is just a smoke test to see if it runs. At the moment testing more would be overbaord.
-        dtypes = [np.complex, np.float]
+        dtypes = [np.complex128, np.float64]
         for dtype in dtypes:
             data = np.ones((10, 20, 30), dtype=dtype)
             x = np.arange(data.shape[-1])
@@ -82,7 +82,7 @@ class IoTest(unittest.TestCase):
         E = 500
         F = 600
 
-        propagated_projections = np.ones((A, B, C), dtype=np.complex)
+        propagated_projections = np.ones((A, B, C), dtype=np.complex128)
         probe = np.zeros((B, C))
         probe_x = np.arange(B)
         probe_y = np.arange(C)

@@ -31,7 +31,7 @@ def propagate_probe(probe, psize, energy, distance, zrange, NPTS=1024):
     zaxis = np.linspace(zrange[0], zrange[1], NPTS)
     outshape = (len(zaxis),) + probe.shape
 
-    propagated_projections = np.empty(outshape, dtype=np.complex)
+    propagated_projections = np.empty(outshape, dtype=complex)
     P = Base()
     g = u.Param()
     g.energy = None
