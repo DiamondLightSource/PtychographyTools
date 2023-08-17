@@ -25,7 +25,7 @@ def recons_auto_mask(obj, weight='crop', percent=10, closing=5, erosion=10):
     elif weight == 'crop':
         cx = int(obj.shape[0] * percent / 100.)
         cy = int(obj.shape[1] * percent / 100.)
-        mask = np.zeros(obj.shape, dtype=np.bool)
+        mask = np.zeros(obj.shape, dtype=bool)
         mask[cy:-cy,cx:-cx] = True
     return mask
 
