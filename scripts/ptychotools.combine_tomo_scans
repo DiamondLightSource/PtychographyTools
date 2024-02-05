@@ -41,4 +41,5 @@ except FileExistsError:
     log(3,"Output folder ({}) already exists".format(outpath))
 
 io.write_multiple_ptyr_to_nxtomo(fnames, tomo_angles, outpath, prefix=prefix, border=args.border, 
-                                 rmramp=args.ramp, norm=args.norm, rmradius=args.rmsupport, rmiter=args.rmiter)
+                                 rmramp=args.ramp, norm=args.norm, rmradius=args.rmsupport, rmiter=args.rmiter,
+                                 save_complex=True, save_odens=True)
