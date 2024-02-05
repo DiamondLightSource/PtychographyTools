@@ -1,5 +1,5 @@
 #!/bin/bash
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )" # this is the path to this launcher script
 
-module load srf
-python $SCRIPT_PATH/ptychotools.j08_preproc_srf $1
+module load python
+python $SCRIPT_PATH/ptychotools.j08_preproc $1
