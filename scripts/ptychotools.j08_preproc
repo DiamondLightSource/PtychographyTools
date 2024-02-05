@@ -31,6 +31,8 @@ parser.add_argument("--posx-set", type=str, dest="posx_set",
                     help="Key to X motor position (set values)")
 parser.add_argument("--posy-set", type=str, dest="posy_set",
                     help="Key to Y motor position (set values)")
+parser.add_argument("--use-set-values", type=int, default=0, dest="use_set_values",
+                    help="Force writing the set_values into the processed file")
 parser.add_argument("-s", "--shape-check", dest="shape", type=bool,
                     help="Check if diffraction data and motor positions match in shape") 
 parser.add_argument("-m", "--multi-trigger-check", dest="multi", type=bool,
@@ -131,13 +133,13 @@ with h5py.File(processed_filepath, "w") as pf:
             print("After binning, the shape will be: ", sh)
 
         # Determine target dtype
-        raw_data_max = raw[0].max()
-        if args.binning:
-            raw_data_max *= (args.binning * args.binning)
-        if (raw_data_max < np.iinfo(raw.dtype).max):
-            target_dtype = raw.dtype
-        else:
-            target_dtype = np.uint32
+        # raw_data_max = raw[0].max()
+        # if args.binning:
+        #     raw_data_max *= (args.binning * args.binning)
+        # if (raw_data_max < np.iinfo(raw.dtype).max):
+        #     target_dtype = raw.dtype
+        # else:
+        target_dtype = np.uint32
         print("The target data type is ", target_dtype)
 
         # Create processed data
@@ -248,6 +250,16 @@ if args.shape and is_mapped_arb:
 if args.scanrank == 1:
     posx = posx.squeeze()
     posy = posy.squeeze()
+
+# Check if interferometer values are valid
+posxy_is_valid = True
+if (not posx.sum()) or (not posy.sum()):
+    posxy_is_valid = False
+    
+# Use set values if requested
+if args.use_set_values or (not posxy_is_valid):
+    posx = posx_set
+    posy = posy_set
 
 # Store processed motor positions
 with h5py.File(args.output, "r+") as f:
