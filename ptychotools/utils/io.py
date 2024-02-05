@@ -326,7 +326,7 @@ def write_multiple_ptyr_to_nxtomo(file_paths, angles, out_path, prefix="", borde
     if save_odens:
         fo = create_nxtomo_file(out_odens,   angles, full_shape, nfiles)
     if save_complex:
-        fc = create_nxtomo_file(out_complex, angles, full_shape, nfiles)
+        fc = create_nxtomo_file(out_complex, angles, full_shape, nfiles, dtype=np.complex64)
     
     ctr = 0
     for idx in range(nfiles):
