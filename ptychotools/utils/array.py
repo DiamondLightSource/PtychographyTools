@@ -13,14 +13,14 @@ def recons_auto_mask(obj, weight='crop', percent=10, closing=5, erosion=10):
         med = scipy.stats.mode(absobj, axis=None)[0][0]
         low  = med * (1-percent/100.)
         high = med * (1+percent/100.)
-        mask = ((absobj > low) & (absobj < high)).astype(np.float)
+        mask = ((absobj > low) & (absobj < high)).astype(float)
         mask = morph.binary_erosion(morph.binary_closing(mask,iterations=closing), iterations=erosion)
     elif weight == 'phase':
         phobj = np.angle(obj)
         med = scipy.stats.mode(phobj, axis=None)[0][0]
         low  = med * (1-percent/100.)
         high = med * (1+percent/100.)
-        mask = ((phobj > low) & (phobj < high)).astype(np.float)
+        mask = ((phobj > low) & (phobj < high)).astype(float)
         mask = morph.binary_erosion(morph.binary_closing(mask,iterations=closing), iterations=erosion)
     elif weight == 'crop':
         cx = int(obj.shape[0] * percent / 100.)
