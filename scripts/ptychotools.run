@@ -8,7 +8,7 @@ import ptypy
 from ptypy import utils as u
 from ptypy.core import Ptycho
 from ptypy.experiment.hdf5_loader import Hdf5Loader
-from ptypy.experiment.hdf5_loader import SwmrLoader
+from ptypy.experiment.swmr_loader import SwmrLoader
 
 import socket
 
@@ -144,26 +144,14 @@ def load_gpu_engines():
 # Replace engine with GPU-accelerated version
 if args.use_gpu:
     for id, engine in parameters.engines.items():
-        if (engine.name == "DM_pycuda_streams"):
-            load_gpu_engines()
-            engine.name = "DM_pycuda_streams"
-            log(3, "Replacing the DM engine with the gpu-accelerated DM_pycuda engine")
-        elif (engine.name == "DM_pycuda") or (engine.name == "DM"):
+        if (engine.name == "DM_pycuda") or (engine.name == "DM"):
             engine.name = "DM_pycuda"
             load_gpu_engines()
             log(3, "Replacing the DM engine with the gpu-accelerated DM_pycuda engine")
-        elif (engine.name == "DM_pycuda_nostream"):
-            load_gpu_engines()
-            engine.name = "DM_pycuda_nostream"
-            log(3, "Replacing the DM engine with the gpu-accelerated DM_pycuda_nostream engine")
-        elif (engine.name == "RAAR_pycuda_stream") or (engine.name == "RAAR"):
+        elif (engine.name == "RAAR_pycuda") or (engine.name == "RAAR"):
             load_gpu_engines()
             engine.name = "RAAR_pycuda"
             log(3, "Replacing the RAAR engine with the gpu-accelerated RAAR_pycuda engine")
-        elif (engine.name == "RAAR_pycuda_nostream"):
-            load_gpu_engines()
-            engine.name = "RAAR_pycuda_nostream"
-            log(3, "Replacing the RAAR engine with the gpu-accelerated RAAR_pycuda_nostream engine")
         elif (engine.name == "ML_pycuda") or (engine.name == "ML"):
             load_gpu_engines()
             engine.name = "ML_pycuda"
