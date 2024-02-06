@@ -139,14 +139,14 @@ def load_gpu_engines():
     try:
         ptypy.load_gpu_engines("cuda")
     except ImportError:
-        print("Warning: could not import pycuda engines")
+        print("Warning: could not import ptypy GPU engines")
 
 # Replace engine with GPU-accelerated version
 if args.use_gpu:
+    load_gpu_engines()
     for id, engine in parameters.engines.items():
         if (engine.name == "DM_pycuda") or (engine.name == "DM"):
             engine.name = "DM_pycuda"
-            load_gpu_engines()
             log(3, "Replacing the DM engine with the gpu-accelerated DM_pycuda engine")
         elif (engine.name == "RAAR_pycuda") or (engine.name == "RAAR"):
             load_gpu_engines()
@@ -178,7 +178,7 @@ if args.use_gpu:
             engine.name = 'DM_glad_cuda'
             log(3, "Replacing the DM engine with the gpu-accelerated DM engine from the GLAD library")
         else:
-            log(3, "There is currently no gpu-acclerated version of the %s engine" %engine.name)
+            log(3, "Loading origina engine %s as provided by user" %engine.name)
             
 if args.share_probe:
     log(3, "Sharing the probe across scans: %s" % args.identifier)

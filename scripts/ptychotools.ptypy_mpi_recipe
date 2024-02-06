@@ -157,12 +157,12 @@ else
 	    echo "This is reconstruction $i of a total of $REPEAT" >> $LOG_FILE
 	    ii=$(printf "%03d" $i)
 	    echo "$ii" >> $LOG_FILE
-	    mpi_params="$mpi_proc_cmd -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER/$ii $EXTRA_ARGS"
+	    mpi_params="$mpi_proc_cmd ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER/$ii $EXTRA_ARGS"
 	    echo "The mpi params are $mpi_params" >> $LOG_FILE
 	    mpirun $mpi_params >> $LOG_FILE
 	done
     else
-	mpi_params="$mpi_proc_cmd -mca btl_tcp_if_exclude lo,docker0 -x MODULEPATH ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
+	mpi_params="$mpi_proc_cmd ptychotools.run $JSON_FILE -I $IDENTIFIER -O $OUTPUT_FOLDER $EXTRA_ARGS"
 	echo "The mpi params are $mpi_params" >> $LOG_FILE
 	mpirun $mpi_params >> $LOG_FILE
     fi
