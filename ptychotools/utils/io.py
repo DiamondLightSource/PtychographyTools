@@ -139,7 +139,7 @@ def create_nxtomo_file(filename, angles, shape, N, name='default'):
     detector = instrument.create_group('detector')
     detector.attrs['NX_class'] = 'NXdetector'
     detector.create_dataset('data', data=np.zeros((N,) + shape), dtype=np.float32)
-    detector.create_dataset('image_key', data=np.zeros(N), dtype=np.int)
+    detector.create_dataset('image_key', data=np.zeros(N), dtype=int)
     sample = entry.create_group('sample')
     sample.attrs['NX_class'] = 'NXsample'
     sample['name'] = np.array([name], dtype='<S6')
