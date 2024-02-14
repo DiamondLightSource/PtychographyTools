@@ -129,7 +129,7 @@ def create_nxstxm_file(filename, energies, shape, N, dtype=np.float64):
     counter['sample_y'].attrs['axis'] = 2
     return f
 
-def create_nxtomo_file(filename, angles, shape, N, name='default'):
+def create_nxtomo_file(filename, angles, shape, N, name='default', dtype=np.float32):
     f = h5.File(filename, 'w')
     entry = f.create_group('entry1')
     entry['definition'] = np.array(['NXtomo'], dtype='<S6')
@@ -138,7 +138,7 @@ def create_nxtomo_file(filename, angles, shape, N, name='default'):
     instrument.attrs['NX_class'] = 'NXinstrument'
     detector = instrument.create_group('detector')
     detector.attrs['NX_class'] = 'NXdetector'
-    detector.create_dataset('data', data=np.zeros((N,) + shape), dtype=np.float32)
+    detector.create_dataset('data', data=np.zeros((N,) + shape), dtype=dtype)
     detector.create_dataset('image_key', data=np.zeros(N), dtype=int)
     sample = entry.create_group('sample')
     sample.attrs['NX_class'] = 'NXsample'
