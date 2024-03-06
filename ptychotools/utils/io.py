@@ -6,6 +6,7 @@ import os
 from . import log
 import numpy as np
 import h5py as h5
+import skimage
 
 try:
     import ptypy.utils as u
@@ -298,7 +299,7 @@ def write_single_ptyr_to_nxstxm(file_path, out_path, prefix="", border=80, rmram
     log(3, "Saved amplitude to {}".format(out_amplitude))
 
 
-def write_multiple_ptyr_to_nxtomo(file_paths, angles, out_path, prefix="", border=80, norm=True, rmramp=True, rmradius=0.5, rmiter=1, save_odens=False, save_complex=False):
+def write_multiple_ptyr_to_nxtomo(file_paths, angles, out_path, prefix="", border=80, norm=True, rmramp=True, unwrap_phase=False, rmradius=0.5, rmiter=1, save_odens=False, save_complex=False):
 
     out_phase  = out_path + "/" + prefix + "tomo_phase.nxs"
     if save_odens:
@@ -349,6 +350,10 @@ def write_multiple_ptyr_to_nxtomo(file_paths, angles, out_path, prefix="", borde
         if norm:
             O *= np.exp(-1j*np.median(np.angle(O)))
         phase = np.angle(O)
+        if unwrap_phase:
+            phase = skimage.restoration.unwrap_phase(phase)
+            if (phase>0).sum()/phase.size < 0.1:
+                phase *= -1
         odens = -np.log(np.abs(O)**2)
         if norm:
             odens -= np.median(odens)
