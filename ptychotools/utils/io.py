@@ -352,7 +352,7 @@ def write_multiple_ptyr_to_nxtomo(file_paths, angles, out_path, prefix="", borde
         phase = np.angle(O)
         if unwrap_phase:
             phase = skimage.restoration.unwrap_phase(phase)
-            if (phase>0).sum()/phase.size < 0.1:
+            if (phase>0).sum()/phase.size < 0.5:
                 phase *= -1
         odens = -np.log(np.abs(O)**2)
         if norm:
