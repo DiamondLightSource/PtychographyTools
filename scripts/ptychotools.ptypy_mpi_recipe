@@ -133,22 +133,9 @@ then
         ptychotools.propagate -i $PTYR_FILE -o $OUTPUT_FOLDER/scan_$IDENTIFIER/ -z "$ZMIN $ZMAX" >> $LOG_FILE
     fi
 else
-    HOSTLIST=$(cat ${PE_HOSTFILE} | awk '{print $1}' | tr "\n" ",") # comma separated list of hosts
-    #HOSTLIST_WITH_CORES=$(cat ${PE_HOSTFILE} | awk '{print $1,$2}' | tr "\n" ",") 
-    echo "The hostlist is $HOSTLIST" >> $LOG_FILE
-    #GETCORES=$(cat ${PE_HOSTFILE} | awk 'NR==1{print $2}')
     NUMCORES=$NUM_PROCS_PER_NODE
     echo "The number of cores per node is $NUMCORES" >> $LOG_FILE
-    NUMNODES=$(echo $HOSTLIST | tr "-cd" "," | wc -c)
-    echo "The number of nodes is $NUMNODES" >> $LOG_FILE
-    NUM_PROCS=$(( NUMNODES * NUMCORES ))
-    #HOSTLIST_WITH_CORES=${HOSTLIST_WITH_CORES// /:} 
-    #HOSTLIST_WITH_CORES=${HOSTLIST_WITH_CORES%?} # gets rid of the trailing comma
-    #echo "THE HOST LIST WITH CORES IS $HOSTLIST_WITH_CORES" >> $LOG_FILE
-    HOST_LIST_WITH_CORES=${HOSTLIST//,/:$NUMCORES,} # puts in the number of cores where the comma would be
-    HOST_LIST_WITH_CORES=${HOST_LIST_WITH_CORES%?} # gets rid of the trailing comma
-    echo "THE HOST LIST WITH CORES IS $HOST_LIST_WITH_CORES" >> $LOG_FILE
-    mpi_proc_cmd="-N ${NUM_PROCS_PER_NODE}"
+    mpi_proc_cmd="-n ${NUMCORES}"
     
     if (($REPEAT > 0));
     then
